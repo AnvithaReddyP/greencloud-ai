@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  greencloud-backend:
+    build: .
+    ports:
+      - "80:8000"
+    volumes:
+      # This is the magic line that allows the Docker container to spawn OTHER Docker containers on the host machine!
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
