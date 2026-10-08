@@ -303,7 +303,8 @@ def get_autoscale_status(session_id: Optional[str] = None):
             "status": "Initializing",
             "region": "local-laptop",
             "created_at": current_time,
-            "is_docker": is_docker
+            "is_docker": is_docker,
+            "container_name": name if is_docker else None
         })
         
     # Scale down
@@ -311,7 +312,9 @@ def get_autoscale_status(session_id: Optional[str] = None):
         inst_to_remove = autoscaler_state["instances"].pop()
         if inst_to_remove.get("is_docker"):
             try:
-                subprocess.run(["docker", "stop", inst_to_remove["id"][2:]], capture_output=True)
+                # Use rm -f for instant termination (stop takes 10s and blocks the server)
+                target = inst_to_remove.get("container_name") or inst_to_remove["id"][2:]
+                subprocess.Popen(["docker", "rm", "-f", target])
             except Exception:
                 pass
         
