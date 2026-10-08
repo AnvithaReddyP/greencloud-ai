@@ -235,6 +235,14 @@ def api_login(req: LoginRequest, response: Response):
     response.set_cookie(key="session_token", value=token, httponly=True)
     return {"status": "ok"}
 
+@app.post("/api/logout")
+def api_logout(request: Request, response: Response):
+    token = request.cookies.get("session_token")
+    if token in SESSIONS_DB:
+        del SESSIONS_DB[token]
+    response.delete_cookie("session_token")
+    return {"status": "ok"}
+
 autoscaler_state = {
     "activeUsers": 2,
     "allocatedVMs": 1,

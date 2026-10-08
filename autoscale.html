@@ -150,13 +150,18 @@
                 </a>
             </nav>
 
-            <!-- Status Indicator -->
-            <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400">
-                <span class="relative flex h-2.5 w-2.5">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                </span>
-                <span>Elastic Engine Active</span>
+            <!-- Status Indicator and Logout -->
+            <div class="flex items-center space-x-3">
+                <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span>Elastic Engine Active</span>
+                </div>
+                <button onclick="logoutUser()" class="flex items-center space-x-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 border border-slate-700 text-slate-200 font-bold px-4 py-1.5 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span>
+                </button>
             </div>
         </div>
     </header>
@@ -655,6 +660,15 @@
 
         // Initial Run
         runSimulationTick();
+
+        async function logoutUser() {
+            try {
+                await fetch("/api/logout", { method: "POST" });
+                window.location.href = "/login";
+            } catch(e) {
+                console.error("Logout failed", e);
+            }
+        }
     </script>
 </body>
 </html>

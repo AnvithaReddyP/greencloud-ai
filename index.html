@@ -66,9 +66,9 @@
             </nav>
 
             <div class="flex items-center space-x-3">
-                <a href="/login" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
-                    <i class="fa-solid fa-user"></i><span>Sign In</span>
-                </a>
+                <button onclick="logoutUser()" class="flex items-center space-x-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span>
+                </button>
                 <button id="toggleDrawerBtn" class="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-500/10 cursor-pointer">
                     <i class="fa-solid fa-robot"></i><span>Gemini AI Agent</span>
                 </button>
@@ -470,6 +470,15 @@
 
         document.getElementById('calculateBtn').addEventListener('click', fetchCalculations);
         document.querySelectorAll('input, select').forEach(el => el.addEventListener('change', fetchCalculations));
+
+        async function logoutUser() {
+            try {
+                await fetch("/api/logout", { method: "POST" });
+                window.location.href = "/login";
+            } catch(e) {
+                console.error("Logout failed", e);
+            }
+        }
 
         // Initial fetch on page load
         fetchCalculations();

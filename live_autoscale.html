@@ -17,6 +17,7 @@
             <div class="flex gap-3">
                 <a href="/" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Dashboard</a>
                 <a href="/live-scaling" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Live Scaling</a>
+                <button onclick="logoutUser()" class="px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 border border-slate-700 hover:border-red-500/50 text-slate-200 rounded-xl text-sm font-medium transition">Log Out</button>
             </div>
         </div>
 
@@ -170,6 +171,15 @@
                 `;
             } catch (err) {
                 outputBox.innerHTML = `<p class="text-red-400">Failed to connect to cloud provider endpoint.</p>`;
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                await fetch("/api/logout", { method: "POST" });
+                window.location.href = "/login";
+            } catch(e) {
+                console.error("Logout failed", e);
             }
         }
     </script>
