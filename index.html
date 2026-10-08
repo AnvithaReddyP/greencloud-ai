@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCloud AI v3.0 - Cloud Infrastructure Matcher</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#090d16',
+                        card: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        /* Drawer Transition */
+        #aiDrawer {
+            transition: transform 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-darker text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 relative overflow-x-hidden">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-leaf text-slate-950 text-xl font-bold"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-extrabold tracking-tight text-white">GreenCloud AI</span>
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400">v3.0</span>
+                    </div>
+                    <p class="text-xs text-slate-400">AWS & GCP Authenticated / 7 Providers Active</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                <a href="/" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i><span>Cloud Matcher</span>
+                </a>
+                <a href="/autoscale" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-network-wired"></i><span>Auto-Scaler</span>
+                </a>
+            </nav>
+
+            <button id="toggleDrawerBtn" class="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-500/10 cursor-pointer">
+                <i class="fa-solid fa-robot"></i><span>Gemini AI Agent</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
+        
+        <!-- Hero Input Panel -->
+        <section class="glass-panel rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -right-20 -top-20 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 class="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Workload Specifications</h1>
+                    <p class="text-sm text-slate-400 mt-1">Configure your cloud requirements to calculate greenest and most cost-effective provider matches.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-cyan-950 text-cyan-400 border border-cyan-500/30">
+                        <i class="fa-solid fa-bolt mr-1.5"></i> Live Carbon Tracking On
+                    </span>
+                </div>
+            </div>
+
+            <!-- Configuration Form -->
+            <form id="matcherForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">vCPU Cores</label>
+                    <input type="number" id="vcpuInput" value="4" min="1" max="128" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">RAM (GB)</label>
+                    <input type="number" id="ramInput" value="16" min="1" max="512" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Storage (GB)</label>
+                    <input type="number" id="storageInput" value="100" min="10" max="10000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Max Budget ($/mo)</label>
+                    <input type="number" id="budgetInput" value="120" min="10" max="5000" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Target Region</label>
+                    <select id="regionInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-emerald-500 transition">
+                        <option value="eu">Europe (Frankfurt)</option>
+                        <option value="nordics" selected>Nordics (Stockholm)</option>
+                        <option value="na">North America (US-West)</option>
+                        <option value="apac">Asia Pacific (Singapore)</option>
+                        <option value="sa">South America (São Paulo)</option>
+                    </select>
+                </div>
+            </form>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between pt-6 border-t border-slate-800 gap-4">
+                <div class="flex items-center space-x-4">
+                    <span class="text-xs font-semibold text-slate-400">Optimization Priority:</span>
+                    <div class="inline-flex rounded-xl bg-slate-900 p-1 border border-slate-800">
+                        <button type="button" data-priority="balanced" class="priority-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition cursor-pointer">Balanced</button>
+                        <button type="button" data-priority="cost" class="priority-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">Lowest Cost</button>
+                        <button type="button" data-priority="carbon" class="priority-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">Zero Carbon</button>
+                    </div>
+                </div>
+                <button id="calculateBtn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-calculator"></i><span>Calculate Best Providers</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Results Grid Section -->
+        <section class="space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-server text-emerald-400"></i><span>Evaluated Cloud Providers</span>
+                </h2>
+                <span id="resultsCount" class="text-xs text-slate-400">Loading providers...</span>
+            </div>
+
+            <div id="providersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically populated cards will appear here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Slide-in AI Assistant Drawer -->
+    <div id="aiDrawer" class="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-slate-950/95 backdrop-blur-xl border-l border-slate-800 shadow-2xl transform translate-x-full flex flex-col">
+        <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-robot text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-bold text-white">Gemini AI Advisor</h3>
+                    <p class="text-[10px] text-emerald-400">Online & Ready</p>
+                </div>
+            </div>
+            <button id="closeDrawerBtn" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Chat History Scroll Box -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-300">
+                <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-sparkles mr-1"></i> GreenCloud Assistant</p>
+                Hello! I am your Gemini-powered infrastructure consultant. Ask me anything about optimizing your workload cost or carbon emissions!
+            </div>
+        </div>
+
+        <!-- Chat Input Form -->
+        <div class="p-4 border-t border-slate-800 bg-slate-900/50">
+            <form id="chatForm" class="flex items-center gap-2">
+                <input type="text" id="chatInput" placeholder="Ask about architecture, pricing, or green regions..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+                <button type="submit" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 py-6 text-center text-xs text-slate-500">
+        <p>GreenCloud AI v3.0 &bull; Sustainable Multi-Cloud Workload Optimizer</p>
+    </footer>
+
+    <!-- Client Script -->
+    <script>
+        let currentPriority = 'balanced';
+        let latestSpecs = { vcpu: 4, ram: 16, storage: 100, budget: 120 };
+
+        // Drawer Toggle Logic
+        const aiDrawer = document.getElementById('aiDrawer');
+        document.getElementById('toggleDrawerBtn').addEventListener('click', () => {
+            aiDrawer.classList.remove('translate-x-full');
+        });
+        document.getElementById('closeDrawerBtn').addEventListener('click', () => {
+            aiDrawer.classList.add('translate-x-full');
+        });
+
+        // Priority Selection
+        document.querySelectorAll('.priority-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.priority-btn').forEach(b => {
+                    b.classList.remove('bg-emerald-500', 'text-slate-950', 'font-bold');
+                    b.classList.add('text-slate-400', 'font-medium');
+                });
+                e.target.classList.remove('text-slate-400', 'font-medium');
+                e.target.classList.add('bg-emerald-500', 'text-slate-950', 'font-bold');
+                currentPriority = e.target.getAttribute('data-priority');
+                fetchCalculations();
+            });
+        });
+
+        async function fetchCalculations() {
+            latestSpecs = {
+                vcpu: parseInt(document.getElementById('vcpuInput').value) || 4,
+                ram: parseInt(document.getElementById('ramInput').value) || 16,
+                storage: parseInt(document.getElementById('storageInput').value) || 100,
+                budget: parseFloat(document.getElementById('budgetInput').value) || 120,
+                region: document.getElementById('regionInput').value,
+                priority: currentPriority
+            };
+
+            try {
+                const res = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(latestSpecs)
+                });
+                const data = await res.json();
+                renderProviders(data.providers);
+            } catch (err) {
+                console.error("Failed to calculate providers:", err);
+            }
+        }
+
+        function renderProviders(providers) {
+            const grid = document.getElementById('providersGrid');
+            document.getElementById('resultsCount').innerText = `${providers.length} Providers Analyzed`;
+            grid.innerHTML = '';
+
+            providers.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "glass-panel rounded-2xl p-6 flex flex-col justify-between border border-slate-800 hover:border-emerald-500/50 transition shadow-xl relative";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-base text-white">${p.name}</h3>
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${p.matchScore > 80 ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-300'}">
+                                ${p.matchScore}% Match
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            <div>
+                                <span class="text-slate-400 block">Monthly Cost</span>
+                                <span class="text-sm font-extrabold text-white">$${p.monthlyCost}</span>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block">Carbon Footprint</span>
+                                <span class="text-sm font-extrabold text-emerald-400">${p.carbonKg} kg CO₂</span>
+                            </div>
+                        </div>
+                        <div class="space-y-1.5 mb-6 text-xs text-slate-300">
+                            <div class="flex justify-between"><span>Renewable Energy:</span><strong class="text-white">${p.renewablePct}%</strong></div>
+                            <div class="flex justify-between"><span>PUE Efficiency:</span><strong class="text-white">${p.pue}</strong></div>
+                        </div>
+                    </div>
+                    <button onclick="alert('Deploying workload to ${p.name} successfully!')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-cloud-arrow-up"></i><span>Select Provider</span>
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Chat Submission Logic
+        document.getElementById('chatForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const inputEl = document.getElementById('chatInput');
+            const promptText = inputEl.value.trim();
+            if (!promptText) return;
+
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Append User Message
+            chatMessages.innerHTML += `
+                <div class="bg-slate-900/80 border border-slate-700/60 rounded-xl p-3 text-slate-200 ml-4">
+                    <p class="font-bold text-cyan-400 mb-1">You</p>
+                    ${promptText}
+                </div>
+            `;
+            inputEl.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const res = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: promptText, context: { ...latestSpecs, priority: currentPriority } })
+                });
+                const data = await res.json();
+                
+                // Append AI Response
+                chatMessages.innerHTML += `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-300 mr-4">
+                        <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-sparkles mr-1"></i> Gemini AI Advisor</p>
+                        ${data.response.replace(/\n/g, '<br>')}
+                    </div>
+                `;
+            } catch (err) {
+                chatMessages.innerHTML += `
+                    <div class="bg-red-950/50 border border-red-500/30 rounded-xl p-3 text-red-300 mr-4">
+                        <p class="font-bold mb-1">Error</p>
+                        Failed to reach Gemini Advisor.
+                    </div>
+                `;
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        });
+
+        document.getElementById('calculateBtn').addEventListener('click', fetchCalculations);
+        document.querySelectorAll('input, select').forEach(el => el.addEventListener('change', fetchCalculations));
+
+        // Initial fetch on page load
+        fetchCalculations();
+    </script>
+</body>
+</html>

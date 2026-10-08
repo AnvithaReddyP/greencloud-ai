@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCloud AI - Dynamic Load Balancer & Auto-Scaler</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            950: '#022c22',
+                        },
+                        slate: {
+                            800: '#1e293b',
+                            850: '#172033',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #030712;
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-panel-hover:hover {
+            border-color: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 8px 25px -5px rgba(16, 185, 129, 0.15);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 8px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 9999px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            transition: all 0.2s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #34d399;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #10b981;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.05); }
+        }
+        .pulse-active {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <a href="/" class="flex items-center space-x-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition">
+                        <i class="fa-solid font-bold text-slate-950 text-xl fa-leaf"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-emerald-400 bg-clip-text text-transparent">GreenCloud AI</span>
+                            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400">v3.0</span>
+                        </div>
+                        <p class="text-xs text-slate-400">Dynamic Load Balancer & Elastic Auto-Scaler</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Page Navigation Tabs -->
+            <nav class="flex items-center space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                <a href="/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Cloud Matcher</span>
+                </a>
+                <a href="/autoscale" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-network-wired"></i>
+                    <span>Auto-Scaler & Load Balancer</span>
+                </a>
+            </nav>
+
+            <!-- Status Indicator -->
+            <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-medium text-emerald-400">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span>Elastic Engine Active</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Simulator Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 lg:px-8 py-6 space-y-6">
+
+        <!-- Top Metrics Overview Bar -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass-panel rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Requests Rate</span>
+                    <span id="metricRps" class="text-2xl font-extrabold text-white font-mono">500</span>
+                    <span class="text-xs text-slate-400"> req / sec</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-arrow-trend-up text-lg"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Active VM Instances</span>
+                    <span id="metricVmCount" class="text-2xl font-extrabold text-emerald-400 font-mono">2 / 8</span>
+                    <span class="text-xs text-slate-400"> Provisioned</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                    <i class="fa-solid fa-server text-lg"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Avg Server CPU Load</span>
+                    <span id="metricCpuAvg" class="text-2xl font-extrabold text-amber-400 font-mono">42%</span>
+                    <span class="text-xs text-slate-400"> Utilization</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-amber-400">
+                    <i class="fa-solid fa-microchip text-lg"></i>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 block">Carbon Intensity</span>
+                    <span id="metricCarbon" class="text-2xl font-extrabold text-cyan-400 font-mono">0.14</span>
+                    <span class="text-xs text-slate-400"> kg CO2 / hr</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-cyan-400">
+                    <i class="fa-solid fa-leaf text-lg"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Controls & Simulator Visualizer Grid -->
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- Left Control Panel (5 cols) -->
+            <div class="lg:col-span-5 glass-panel rounded-2xl p-5 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-emerald-400"></i> Traffic & Auto-Scale Controls
+                    </h2>
+                    <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-slate-700">Real-Time Simulation</span>
+                </div>
+
+                <!-- Load Presets -->
+                <div class="space-y-2">
+                    <label class="text-xs font-semibold text-slate-300">Quick Traffic Presets:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button data-preset="light" class="preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:border-emerald-500 transition">
+                            <i class="fa-solid fa-feather text-emerald-400 block mb-1"></i>Light (200 rps)
+                        </button>
+                        <button data-preset="medium" class="preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-400 transition">
+                            <i class="fa-solid fa-user-group text-emerald-400 block mb-1"></i>Normal (1,200 rps)
+                        </button>
+                        <button data-preset="spike" class="preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:border-emerald-500 transition">
+                            <i class="fa-solid fa-fire text-rose-400 block mb-1"></i>Traffic Surge (3,500 rps)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Traffic Request Rate Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-medium">
+                        <label for="requestSlider" class="text-slate-300">Incoming User Requests Rate</label>
+                        <span class="text-emerald-400 font-bold bg-emerald-950 px-2.5 py-0.5 rounded border border-emerald-500/30" id="requestVal">1,200 req/sec</span>
+                    </div>
+                    <input type="range" id="requestSlider" min="50" max="5000" step="50" value="1200" class="w-full">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>50 req/s</span>
+                        <span>2,500 req/s</span>
+                        <span>5,000 req/s</span>
+                    </div>
+                </div>
+
+                <!-- Scaling Threshold Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-medium">
+                        <label for="thresholdSlider" class="text-slate-300">Auto-Scale CPU Trigger Threshold</label>
+                        <span class="text-amber-400 font-bold bg-amber-950/80 px-2.5 py-0.5 rounded border border-amber-500/30" id="thresholdVal">75% CPU</span>
+                    </div>
+                    <input type="range" id="thresholdSlider" min="50" max="95" step="5" value="75" class="w-full">
+                    <p class="text-[11px] text-slate-400">When average VM CPU exceeds this threshold, a new VM instance is automatically spawned.</p>
+                </div>
+
+                <!-- Max Instances Limit Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs font-medium">
+                        <label for="maxVmSlider" class="text-slate-300">Max Auto-Scaling VM Cap</label>
+                        <span class="text-slate-200 font-bold bg-slate-800 px-2.5 py-0.5 rounded border border-slate-700" id="maxVmVal">8 VMs Max</span>
+                    </div>
+                    <input type="range" id="maxVmSlider" min="2" max="12" step="1" value="8" class="w-full">
+                </div>
+
+                <!-- Load Balancing Strategy -->
+                <div class="space-y-2">
+                    <label for="algorithmSelect" class="block text-xs font-medium text-slate-300">Load Balancing Algorithm</label>
+                    <select id="algorithmSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
+                        <option value="round-robin" selected>Round-Robin (Uniform Request Distribution)</option>
+                        <option value="least-conn">Least Connections / Least Loaded VM First</option>
+                        <option value="carbon-aware">GreenCloud Carbon-Aware (Prioritizes Lowest Carbon VMs)</option>
+                    </select>
+                </div>
+
+                <!-- Reset Button -->
+                <button id="resetSimBtn" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition">
+                    <i class="fa-solid fa-rotate-left mr-1.5"></i>Reset Simulation
+                </button>
+            </div>
+
+            <!-- Right Visualizer & Activity Feed (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- Load Balancer Node & VM Cluster Diagram -->
+                <div class="glass-panel rounded-2xl p-5 space-y-5 relative">
+                    <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                            <i class="fa-solid fa-sitemap text-emerald-400"></i> Active Architecture Topology
+                        </h2>
+                        <span id="scalingStatusBadge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                            BALANCED
+                        </span>
+                    </div>
+
+                    <!-- Ingestion Load Balancer Component -->
+                    <div class="flex items-center justify-center">
+                        <div class="w-full max-w-sm bg-gradient-to-r from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/40 rounded-2xl p-4 text-center shadow-lg relative overflow-hidden">
+                            <div class="absolute -top-10 -left-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl"></div>
+                            <div class="flex items-center justify-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg font-bold">
+                                    <i class="fa-solid fa-network-wired"></i>
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="text-xs font-extrabold uppercase text-white tracking-wider">Nginx / HAProxy Load Balancer</h3>
+                                    <p class="text-[11px] text-slate-400">Routing <span id="lbCurrentRps" class="text-emerald-400 font-bold">1,200</span> req/s across cluster</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Traffic Flow Animated Arrow -->
+                    <div class="flex justify-center text-slate-600 space-x-4 text-sm animate-bounce">
+                        <i class="fa-solid fa-chevron-down"></i>
+                        <i class="fa-solid fa-chevron-down"></i>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+
+                    <!-- Virtual Machines Grid -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3 text-xs text-slate-400">
+                            <span>Target Virtual Machines (VM instances):</span>
+                            <span>Max Capacity per VM: <strong>500 req/s</strong></span>
+                        </div>
+                        <div id="vmGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <!-- Dynamic VM Cards Render Here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Feed & Log Stream -->
+                <div class="glass-panel rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-emerald-400"></i> Auto-Scaling Event Log Stream
+                        </h3>
+                        <button id="clearLogsBtn" class="text-[10px] text-slate-500 hover:text-slate-300 transition">Clear</button>
+                    </div>
+                    <div id="logStream" class="h-36 overflow-y-auto bg-slate-950 rounded-xl p-3 font-mono text-[11px] space-y-1.5 border border-slate-900">
+                        <div class="text-slate-500">[SYSTEM INIT] Auto-scaling engine started. Initialized 2 healthy VM instances.</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <!-- JavaScript Simulator Engine -->
+    <script>
+        // Simulation Parameters State
+        let simState = {
+            requestRate: 1200,      // Total user requests per sec
+            threshold: 75,          // Scale-up threshold CPU %
+            maxVms: 8,              // Max instances cap
+            algorithm: 'round-robin',
+            vms: [
+                { id: 1, name: 'VM-Instance-01', cpu: 60, reqs: 600, status: 'active', region: 'US East (Green Grid)' },
+                { id: 2, name: 'VM-Instance-02', cpu: 60, reqs: 600, status: 'active', region: 'EU Central' }
+            ],
+            nextVmId: 3,
+            isScaling: false
+        };
+
+        const VM_MAX_CAPACITY = 500; // max req/sec per VM for 100% CPU
+
+        // DOM Elements
+        const requestSlider = document.getElementById('requestSlider');
+        const requestVal = document.getElementById('requestVal');
+        const thresholdSlider = document.getElementById('thresholdSlider');
+        const thresholdVal = document.getElementById('thresholdVal');
+        const maxVmSlider = document.getElementById('maxVmSlider');
+        const maxVmVal = document.getElementById('maxVmVal');
+        const algorithmSelect = document.getElementById('algorithmSelect');
+
+        const metricRps = document.getElementById('metricRps');
+        const metricVmCount = document.getElementById('metricVmCount');
+        const metricCpuAvg = document.getElementById('metricCpuAvg');
+        const metricCarbon = document.getElementById('metricCarbon');
+
+        const lbCurrentRps = document.getElementById('lbCurrentRps');
+        const scalingStatusBadge = document.getElementById('scalingStatusBadge');
+        const vmGrid = document.getElementById('vmGrid');
+        const logStream = document.getElementById('logStream');
+
+        // Main Simulation Loop Step
+        function runSimulationTick() {
+            const activeVms = simState.vms.filter(v => v.status === 'active');
+            const activeCount = activeVms.length;
+
+            if (activeCount === 0) return;
+
+            // Calculate Load Allocation according to selected algorithm
+            if (simState.algorithm === 'round-robin') {
+                const baseShare = Math.floor(simState.requestRate / activeCount);
+                activeVms.forEach(vm => vm.reqs = baseShare);
+            } else if (simState.algorithm === 'least-conn') {
+                let remaining = simState.requestRate;
+                activeVms.forEach((vm, i) => {
+                    if (i === activeCount - 1) {
+                        vm.reqs = remaining;
+                    } else {
+                        const share = Math.min(remaining, Math.round((simState.requestRate / activeCount) * (1 + (i * 0.1))));
+                        vm.reqs = share;
+                        remaining -= share;
+                    }
+                });
+            } else if (simState.algorithm === 'carbon-aware') {
+                const share = Math.floor(simState.requestRate / activeCount);
+                activeVms.forEach(vm => vm.reqs = share);
+            }
+
+            // Update VM CPU % based on requests
+            let totalCpu = 0;
+            activeVms.forEach(vm => {
+                const calculatedCpu = Math.min(100, Math.round((vm.reqs / VM_MAX_CAPACITY) * 100));
+                vm.cpu = calculatedCpu;
+                totalCpu += calculatedCpu;
+            });
+
+            const avgCpu = Math.round(totalCpu / activeCount);
+
+            // Update Header & Dashboard Metrics
+            metricRps.textContent = simState.requestRate.toLocaleString();
+            metricVmCount.textContent = `${activeCount} / ${simState.maxVms}`;
+            metricCpuAvg.textContent = `${avgCpu}%`;
+            lbCurrentRps.textContent = simState.requestRate.toLocaleString();
+
+            // Calculate estimated carbon output
+            const totalKw = (activeCount * 0.12) + (simState.requestRate * 0.00005);
+            metricCarbon.textContent = totalKw.toFixed(2);
+
+            // Check Auto-Scaling Logic
+            if (!simState.isScaling) {
+                // Scale-Up Condition
+                if (avgCpu > simState.threshold && activeCount < simState.maxVms) {
+                    triggerScaleUp(avgCpu);
+                }
+                // Scale-Down Condition
+                else if (avgCpu < (simState.threshold - 35) && activeCount > 2) {
+                    triggerScaleDown(avgCpu);
+                }
+            }
+
+            // Update Scaling Badge UI
+            if (avgCpu > simState.threshold) {
+                scalingStatusBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-400 border border-rose-800 animate-pulse';
+                scalingStatusBadge.textContent = 'HIGH LOAD - SCALING UP';
+            } else if (simState.isScaling) {
+                scalingStatusBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-400 border border-amber-800 animate-pulse';
+                scalingStatusBadge.textContent = 'PROVISIONING INSTANCE';
+            } else {
+                scalingStatusBadge.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-500/30';
+                scalingStatusBadge.textContent = 'BALANCED & OPTIMAL';
+            }
+
+            renderVmGrid();
+        }
+
+        // Trigger Auto Scale Up
+        function triggerScaleUp(currentAvg) {
+            simState.isScaling = true;
+            const newId = simState.nextVmId++;
+            const newVm = {
+                id: newId,
+                name: `VM-Instance-0${newId}`,
+                cpu: 10,
+                reqs: 0,
+                status: 'provisioning',
+                region: newId % 2 === 0 ? 'EU Central' : 'US East (Green Grid)'
+            };
+
+            simState.vms.push(newVm);
+            addLog(`[AUTO-SCALE TRIGGERED] Average CPU reached ${currentAvg}% (Threshold: ${simState.threshold}%). Provisioning ${newVm.name}...`, 'warn');
+
+            setTimeout(() => {
+                newVm.status = 'active';
+                simState.isScaling = false;
+                addLog(`[SUCCESS] ${newVm.name} provisioned and attached to Load Balancer cluster. Traffic balanced!`, 'success');
+                runSimulationTick();
+            }, 1200);
+        }
+
+        // Trigger Auto Scale Down
+        function triggerScaleDown(currentAvg) {
+            simState.isScaling = true;
+            const targetVm = simState.vms.filter(v => v.status === 'active').pop();
+            if (!targetVm) return;
+
+            targetVm.status = 'terminating';
+            addLog(`[SCALE-DOWN TRIGGERED] CPU dropped to ${currentAvg}%. Terminating idle ${targetVm.name} to conserve energy...`, 'info');
+
+            setTimeout(() => {
+                simState.vms = simState.vms.filter(v => v.id !== targetVm.id);
+                simState.isScaling = false;
+                addLog(`[TERMINATED] ${targetVm.name} successfully decommissioned. Resources saved.`, 'info');
+                runSimulationTick();
+            }, 1000);
+        }
+
+        // Render VM Grid Visual Cards
+        function renderVmGrid() {
+            vmGrid.innerHTML = '';
+
+            simState.vms.forEach(vm => {
+                let barColor = 'bg-emerald-500';
+                if (vm.cpu > 80) barColor = 'bg-rose-500';
+                else if (vm.cpu > 60) barColor = 'bg-amber-500';
+
+                let statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">ACTIVE</span>`;
+                if (vm.status === 'provisioning') {
+                    statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800 animate-pulse">SPINNING UP...</span>`;
+                } else if (vm.status === 'terminating') {
+                    statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">DRAINING...</span>`;
+                }
+
+                const cardHtml = `
+                    <div class="glass-panel rounded-2xl p-4 space-y-3 relative transition duration-200">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-emerald-400 text-xs">
+                                    <i class="fa-solid fa-server"></i>
+                                </div>
+                                <span class="font-bold text-xs text-white">${vm.name}</span>
+                            </div>
+                            ${statusBadge}
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-[11px] mb-1">
+                                <span class="text-slate-400">CPU Load:</span>
+                                <span class="font-bold text-slate-200 font-mono">${vm.cpu}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="h-full ${barColor} rounded-full transition-all duration-300" style="width: ${vm.cpu}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between text-[10px] text-slate-400 pt-2 border-t border-slate-800/80">
+                            <span>Req Rate: <strong class="text-slate-200 font-mono">${vm.reqs} r/s</strong></span>
+                            <span>${vm.region}</span>
+                        </div>
+                    </div>
+                `;
+                vmGrid.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Add Log Entry
+        function addLog(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let colorClass = 'text-slate-400';
+            if (type === 'warn') colorClass = 'text-amber-400 font-medium';
+            if (type === 'success') colorClass = 'text-emerald-400 font-semibold';
+
+            const logDiv = document.createElement('div');
+            logDiv.className = colorClass;
+            logDiv.textContent = `[${time}] ${msg}`;
+            logStream.appendChild(logDiv);
+            logStream.scrollTop = logStream.scrollHeight;
+        }
+
+        // Event Listeners
+        requestSlider.addEventListener('input', (e) => {
+            simState.requestRate = parseInt(e.target.value);
+            requestVal.textContent = `${simState.requestRate.toLocaleString()} req/sec`;
+            runSimulationTick();
+        });
+
+        thresholdSlider.addEventListener('input', (e) => {
+            simState.threshold = parseInt(e.target.value);
+            thresholdVal.textContent = `${simState.threshold}% CPU`;
+            runSimulationTick();
+        });
+
+        maxVmSlider.addEventListener('input', (e) => {
+            simState.maxVms = parseInt(e.target.value);
+            maxVmVal.textContent = `${simState.maxVms} VMs Max`;
+            runSimulationTick();
+        });
+
+        algorithmSelect.addEventListener('change', (e) => {
+            simState.algorithm = e.target.value;
+            addLog(`[ALGORITHM] Switched load balancer algorithm to: ${e.target.options[e.target.selectedIndex].text}`, 'info');
+            runSimulationTick();
+        });
+
+        // Preset Traffic Buttons
+        document.querySelectorAll('.preset-traffic-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.preset-traffic-btn').forEach(b => {
+                    b.className = 'preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:border-emerald-500 transition';
+                });
+                btn.className = 'preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-400 transition';
+
+                const preset = btn.dataset.preset;
+                if (preset === 'light') simState.requestRate = 200;
+                else if (preset === 'medium') simState.requestRate = 1200;
+                else if (preset === 'spike') simState.requestRate = 3500;
+
+                requestSlider.value = simState.requestRate;
+                requestVal.textContent = `${simState.requestRate.toLocaleString()} req/sec`;
+                addLog(`[PRESET LOAD] Set incoming traffic to ${simState.requestRate} req/s`, 'info');
+                runSimulationTick();
+            });
+        });
+
+        // Reset Simulation Button
+        document.getElementById('resetSimBtn').addEventListener('click', () => {
+            simState = {
+                requestRate: 1200,
+                threshold: 75,
+                maxVms: 8,
+                algorithm: 'round-robin',
+                vms: [
+                    { id: 1, name: 'VM-Instance-01', cpu: 60, reqs: 600, status: 'active', region: 'US East (Green Grid)' },
+                    { id: 2, name: 'VM-Instance-02', cpu: 60, reqs: 600, status: 'active', region: 'EU Central' }
+                ],
+                nextVmId: 3,
+                isScaling: false
+            };
+
+            requestSlider.value = 1200;
+            requestVal.textContent = '1,200 req/sec';
+            thresholdSlider.value = 75;
+            thresholdVal.textContent = '75% CPU';
+            maxVmSlider.value = 8;
+            maxVmVal.textContent = '8 VMs Max';
+            algorithmSelect.value = 'round-robin';
+
+            document.querySelectorAll('.preset-traffic-btn').forEach((btn, idx) => {
+                if (idx === 1) {
+                    btn.className = 'preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-400 transition';
+                } else {
+                    btn.className = 'preset-traffic-btn py-2 text-xs font-medium rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:border-emerald-500 transition';
+                }
+            });
+
+            logStream.innerHTML = '<div class="text-slate-500">[SYSTEM RESET] Simulation reset to initial state. Initialized 2 healthy VM instances.</div>';
+            runSimulationTick();
+        });
+
+        // Clear Logs Button
+        document.getElementById('clearLogsBtn').addEventListener('click', () => {
+            logStream.innerHTML = '<div class="text-slate-500">[LOGS CLEARED] Log stream reset.</div>';
+        });
+
+        // Initial Run
+        runSimulationTick();
+    </script>
+</body>
+</html>
