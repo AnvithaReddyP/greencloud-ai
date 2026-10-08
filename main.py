@@ -32,10 +32,10 @@ app.add_middleware(
 
 # Configured API Keys from User Environment
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
-ELECTRICITY_MAPS_KEY = os.getenv("ELECTRICITY_MAPS_KEY", "")
-AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY", "")
-AWS_SECRET_KEY = os.getenv("AWS_SECRET_KEY", "")
-GCP_BILLING_KEY = os.getenv("GCP_BILLING_KEY", "")
+ELECTRICITY_MAPS_KEY = os.getenv("ELECTRICITY_MAPS_API_KEY", "")
+AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID", "")
+AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+GCP_BILLING_KEY = os.getenv("GCP_BILLING_API_KEY", "")
 
 REGIONAL_GRID = {
     "na": 380,
