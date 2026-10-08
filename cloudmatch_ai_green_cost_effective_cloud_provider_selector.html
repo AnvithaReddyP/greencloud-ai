@@ -595,6 +595,8 @@
             handleChatSubmit(new Event('submit'));
         }
 
+        let chatHistory = [];
+
         async function handleChatSubmit(e) {
             e.preventDefault();
             const input = document.getElementById('chat-input');
@@ -639,20 +641,39 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         prompt: userText,
-                        context: workloadContext
+                        context: workloadContext,
+                        history: chatHistory
                     })
                 });
 
                 document.getElementById(loadingId).remove();
 
                 if (res.ok) {
-                    const data = await res.json();
-                    const aiReply = data.response || "No response received.";
                     messagesBox.innerHTML += `
-                        <div class="bg-slate-800/90 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700 max-w-[90%] leading-relaxed">
-                            ${formatMarkdown(aiReply)}
+                        <div class="bg-slate-800/90 text-slate-100 p-3 rounded-2xl rounded-tl-none border border-slate-700 max-w-[90%] leading-relaxed ai-stream-response">
                         </div>
                     `;
+                    const streamNodes = messagesBox.querySelectorAll('.ai-stream-response');
+                    const currentStreamNode = streamNodes[streamNodes.length - 1];
+                    
+                    const reader = res.body.getReader();
+                    const decoder = new TextDecoder("utf-8");
+                    let done = false;
+                    let fullText = "";
+
+                    while (!done) {
+                        const { value, done: doneReading } = await reader.read();
+                        done = doneReading;
+                        if (value) {
+                            const chunk = decoder.decode(value, { stream: true });
+                            fullText += chunk;
+                            currentStreamNode.innerHTML = formatMarkdown(fullText);
+                            messagesBox.scrollTop = messagesBox.scrollHeight;
+                        }
+                    }
+
+                    chatHistory.push({ role: 'user', text: userText });
+                    chatHistory.push({ role: 'model', text: fullText });
                 } else {
                     const errData = await res.json().catch(() => ({ detail: "API Error" }));
                     messagesBox.innerHTML += `

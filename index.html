@@ -60,11 +60,19 @@
                 <a href="/autoscale" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
                     <i class="fa-solid fa-network-wired"></i><span>Auto-Scaler</span>
                 </a>
+                <a href="/live-scaling" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-chart-line"></i><span>Live Scaling</span>
+                </a>
             </nav>
 
-            <button id="toggleDrawerBtn" class="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-500/10 cursor-pointer">
-                <i class="fa-solid fa-robot"></i><span>Gemini AI Agent</span>
-            </button>
+            <div class="flex items-center space-x-3">
+                <a href="/login" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-user"></i><span>Sign In</span>
+                </a>
+                <button id="toggleDrawerBtn" class="flex items-center space-x-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-emerald-500/10 cursor-pointer">
+                    <i class="fa-solid fa-robot"></i><span>Gemini AI Agent</span>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -188,10 +196,122 @@
         <p>GreenCloud AI v3.0 &bull; Sustainable Multi-Cloud Workload Optimizer</p>
     </footer>
 
+    <!-- Provider Details Modal -->
+    <div id="providerModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+        <div class="glass-panel w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="providerModalContent">
+            <!-- Header -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/80 sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-cloud"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-extrabold text-white" id="modalProviderName">Provider Name</h3>
+                        <p class="text-xs text-slate-400" id="modalProviderLocation">Location</p>
+                    </div>
+                </div>
+                <button onclick="closeProviderModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 space-y-6">
+                <!-- Score Breakdown -->
+                <div>
+                    <h4 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Score Breakdown</h4>
+                    <p class="text-sm text-slate-300 leading-relaxed" id="modalBreakdown"></p>
+                    <div class="grid grid-cols-3 gap-4 mt-4">
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-center shadow-inner">
+                            <span class="block text-slate-400 text-xs mb-1">Cost Efficiency</span>
+                            <span class="text-lg font-bold text-white" id="modalCost"></span>
+                        </div>
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-center shadow-inner">
+                            <span class="block text-slate-400 text-xs mb-1">PUE Rating</span>
+                            <span class="text-lg font-bold text-white" id="modalPue"></span>
+                        </div>
+                        <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-center shadow-inner">
+                            <span class="block text-slate-400 text-xs mb-1">Green Energy</span>
+                            <span class="text-lg font-bold text-white" id="modalRenewable"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regions & Hardware -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Data Center Regions</h4>
+                        <ul class="space-y-2 text-sm text-slate-300" id="modalRegions">
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Hardware Architectures</h4>
+                        <ul class="space-y-2 text-sm text-slate-300" id="modalHardware">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Compliance -->
+                <div>
+                    <h4 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3 border-b border-slate-800 pb-1">Compliance & Green Certifications</h4>
+                    <ul class="space-y-2 text-sm text-slate-300 grid grid-cols-1 sm:grid-cols-2 gap-2" id="modalCompliance">
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="p-6 border-t border-slate-800 bg-slate-900/80 flex justify-end">
+                <button onclick="alert('Deploying workload...')" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer">
+                    Confirm & Deploy
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Client Script -->
     <script>
         let currentPriority = 'balanced';
         let latestSpecs = { vcpu: 4, ram: 16, storage: 100, budget: 120 };
+        let currentProviders = [];
+
+        function openProviderModal(id) {
+            const provider = currentProviders.find(p => p.id === id);
+            if (!provider) return;
+            
+            document.getElementById('modalProviderName').innerText = provider.name;
+            document.getElementById('modalProviderLocation').innerText = provider.baseLocation;
+            document.getElementById('modalBreakdown').innerText = provider.breakdown || "High performance cloud provider.";
+            document.getElementById('modalCost').innerText = "$" + provider.monthlyCost + "/mo";
+            document.getElementById('modalPue').innerText = provider.pue;
+            document.getElementById('modalRenewable').innerText = provider.renewablePct + "%";
+            
+            const regionsList = document.getElementById('modalRegions');
+            regionsList.innerHTML = provider.regions ? provider.regions.map(r => `<li><i class="fa-solid fa-location-dot text-emerald-500 mr-2"></i>${r}</li>`).join('') : '<li>N/A</li>';
+            
+            const hwList = document.getElementById('modalHardware');
+            hwList.innerHTML = provider.hardware ? provider.hardware.map(h => `<li><i class="fa-solid fa-microchip text-emerald-500 mr-2"></i>${h}</li>`).join('') : '<li>N/A</li>';
+            
+            const compList = document.getElementById('modalCompliance');
+            compList.innerHTML = provider.compliance ? provider.compliance.map(c => `<li><i class="fa-solid fa-check-circle text-emerald-500 mr-2"></i>${c}</li>`).join('') : '<li>N/A</li>';
+            
+            const modal = document.getElementById('providerModal');
+            const content = document.getElementById('providerModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+        
+        function closeProviderModal() {
+            const modal = document.getElementById('providerModal');
+            const content = document.getElementById('providerModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
 
         // Drawer Toggle Logic
         const aiDrawer = document.getElementById('aiDrawer');
@@ -240,6 +360,7 @@
         }
 
         function renderProviders(providers) {
+            currentProviders = providers;
             const grid = document.getElementById('providersGrid');
             document.getElementById('resultsCount').innerText = `${providers.length} Providers Analyzed`;
             grid.innerHTML = '';
@@ -270,13 +391,15 @@
                             <div class="flex justify-between"><span>PUE Efficiency:</span><strong class="text-white">${p.pue}</strong></div>
                         </div>
                     </div>
-                    <button onclick="alert('Deploying workload to ${p.name} successfully!')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white transition flex items-center justify-center gap-2 cursor-pointer">
+                    <button onclick="openProviderModal('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white transition flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-cloud-arrow-up"></i><span>Select Provider</span>
                     </button>
                 `;
                 grid.appendChild(card);
             });
         }
+
+        let chatHistory = [];
 
         // Chat Submission Logic
         document.getElementById('chatForm').addEventListener('submit', async (e) => {
@@ -301,17 +424,39 @@
                 const res = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText, context: { ...latestSpecs, priority: currentPriority } })
+                    body: JSON.stringify({ prompt: promptText, context: { ...latestSpecs, priority: currentPriority }, history: chatHistory })
                 });
-                const data = await res.json();
                 
-                // Append AI Response
+                if (!res.ok) throw new Error("API Error");
+
+                // Append empty AI Response container
                 chatMessages.innerHTML += `
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 text-slate-300 mr-4">
                         <p class="font-bold text-emerald-400 mb-1"><i class="fa-solid fa-sparkles mr-1"></i> Gemini AI Advisor</p>
-                        ${data.response.replace(/\n/g, '<br>')}
+                        <div class="ai-stream-response"></div>
                     </div>
                 `;
+                const streamNodes = chatMessages.querySelectorAll('.ai-stream-response');
+                const currentStreamNode = streamNodes[streamNodes.length - 1];
+                
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let done = false;
+                let fullText = "";
+
+                while (!done) {
+                    const { value, done: doneReading } = await reader.read();
+                    done = doneReading;
+                    if (value) {
+                        const chunk = decoder.decode(value, { stream: true });
+                        fullText += chunk;
+                        currentStreamNode.innerHTML = fullText.replace(/\n/g, '<br>');
+                        chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                }
+                
+                chatHistory.push({ role: "user", text: promptText });
+                chatHistory.push({ role: "model", text: fullText });
             } catch (err) {
                 chatMessages.innerHTML += `
                     <div class="bg-red-950/50 border border-red-500/30 rounded-xl p-3 text-red-300 mr-4">

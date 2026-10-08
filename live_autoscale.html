@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCloud AI - Live Traffic Auto-Scaler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 font-sans">
+    <div class="max-w-5xl mx-auto space-y-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
+            <div>
+                <h1 class="text-2xl font-bold text-cyan-400">🌐 Live Traffic Auto-Scale & Instance Inspector</h1>
+                <p class="text-slate-400 text-sm mt-1">Demonstrating automatic VM allocation based on concurrent user traffic.</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="/" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Dashboard</a>
+                <a href="/live-scaling" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Live Scaling</a>
+            </div>
+        </div>
+
+        <!-- Simulation Control Center -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
+                <p class="text-slate-400 text-sm font-medium">Active Website Visitors</p>
+                <div class="flex items-baseline gap-3 mt-2">
+                    <span id="userCountDisplay" class="text-4xl font-extrabold text-cyan-400">2</span>
+                    <span class="text-xs text-slate-500">users connected</span>
+                </div>
+                <div class="mt-4 flex gap-2">
+                    <button onclick="simulateUsers(1)" class="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">+ Add User</button>
+                    <button onclick="simulateUsers(-1)" class="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">- Remove</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
+                <p class="text-slate-400 text-sm font-medium">Dynamically Allocated VMs</p>
+                <div class="flex items-baseline gap-3 mt-2">
+                    <span id="vmCountDisplay" class="text-4xl font-extrabold text-emerald-400">1</span>
+                    <span class="text-xs text-slate-500">instances active</span>
+                </div>
+                <p class="text-xs text-slate-400 mt-4">Rule: 1 VM spawned per 2 concurrent users.</p>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
+                <p class="text-slate-400 text-sm font-medium">Energy Draw & Carbon</p>
+                <div class="flex items-baseline gap-3 mt-2">
+                    <span id="powerDisplay" class="text-4xl font-extrabold text-amber-400">45.0</span>
+                    <span class="text-xs text-slate-500">Watts total</span>
+                </div>
+                <p id="carbonDisplay" class="text-xs text-emerald-400 mt-4">0.1 kg CO₂ / hr (Nordics Grid)</p>
+            </div>
+        </div>
+
+        <!-- Live Instances Grid -->
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-200">Active Virtual Machines Cluster</h2>
+                    <p class="text-xs text-slate-400">Live view of dynamically provisioned instances responding to traffic.</p>
+                </div>
+            </div>
+            <div id="instancesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p class="text-sm text-slate-500">Fetching live cluster status...</p>
+            </div>
+        </div>
+
+        <!-- Live Access Key Instance Inspector -->
+        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-200">Live Cloud Instance Inspector</h2>
+                    <p class="text-xs text-slate-400">Inspect the exact underlying hardware specs of your active instances using your configured access key.</p>
+                </div>
+                <button onclick="fetchInstanceDetails()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition shadow-md">Inspect via Access Key</button>
+            </div>
+
+            <div id="inspectorOutput" class="bg-slate-950 border border-slate-800 p-5 rounded-xl font-mono text-xs text-slate-300 space-y-2">
+                <p class="text-slate-500">Click "Inspect via Access Key" to query live cloud metadata and configuration details...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function renderGrid(instances) {
+            const grid = document.getElementById('instancesGrid');
+            if (!instances || instances.length === 0) {
+                grid.innerHTML = '<p class="text-sm text-slate-500">No instances running.</p>';
+                return;
+            }
+            grid.innerHTML = instances.map(inst => `
+                <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-inner">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-mono text-xs font-bold text-slate-300">ID: ${inst.id}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${inst.status === 'Running' ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30' : 'bg-amber-950 text-amber-400 border-amber-500/30'} border animate-pulse">
+                            ${inst.status.toUpperCase()}
+                        </span>
+                    </div>
+                    <div class="text-xs text-slate-400 space-y-1">
+                        <p><i class="fa-solid fa-network-wired w-4 text-cyan-500"></i> ${inst.ip}</p>
+                        <p><i class="fa-solid fa-globe w-4 text-cyan-500"></i> ${inst.region}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const sessionId = Math.random().toString(36).substring(2, 15);
+
+        async function updateStatus() {
+            try {
+                let res = await fetch('/api/autoscaler/status?session_id=' + sessionId);
+                let data = await res.json();
+                document.getElementById('userCountDisplay').innerText = data.activeUsers;
+                document.getElementById('vmCountDisplay').innerText = data.allocatedVMs;
+                document.getElementById('powerDisplay').innerText = data.totalPowerWatts.toFixed(1);
+                renderGrid(data.instances);
+            } catch (err) {
+                console.error("Error fetching status:", err);
+            }
+        }
+
+        async function simulateUsers(delta) {
+            let current = parseInt(document.getElementById('userCountDisplay').innerText) + delta;
+            if (current < 1) current = 1;
+            
+            let res = await fetch('/api/autoscaler/ping', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({users: current})
+            });
+            let data = await res.json();
+            
+            document.getElementById('userCountDisplay').innerText = data.activeUsers;
+            document.getElementById('vmCountDisplay').innerText = data.allocatedVMs;
+            let watts = data.totalPowerWatts;
+            document.getElementById('powerDisplay').innerText = watts.toFixed(1);
+            document.getElementById('carbonDisplay').innerText = (watts * 0.025 / 1000).toFixed(2) + " kg CO₂ / hr (Nordics Grid)";
+            renderGrid(data.instances);
+        }
+
+        // Start polling status to update "Initializing" -> "Running"
+        setInterval(updateStatus, 1500);
+        updateStatus();
+
+        async function fetchInstanceDetails() {
+            let outputBox = document.getElementById('inspectorOutput');
+            outputBox.innerHTML = `<p class="text-cyan-400 animate-pulse">Authenticating with Cloud Access Key and fetching live instance metadata...</p>`;
+            
+            try {
+                let res = await fetch('/api/aws/instance-details', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({vcpu: 4, ram: 16})
+                });
+                let data = await res.json();
+                
+                outputBox.innerHTML = `
+                    <p class="text-emerald-400 font-bold text-sm">✔ Cloud Access Key Authenticated Successfully</p>
+                    <div class="grid grid-cols-2 gap-2 mt-3 text-slate-300">
+                        <p>• Instance Type: <span class="text-white font-semibold">${data.instanceType}</span></p>
+                        <p>• vCPU Cores: <span class="text-white font-semibold">${data.vcpu} vCPU</span></p>
+                        <p>• Memory Allocation: <span class="text-white font-semibold">${data.ramGb} GB RAM</span></p>
+                        <p>• Architecture: <span class="text-white font-semibold">${data.architecture}</span></p>
+                        <p>• Processor Specs: <span class="text-white font-semibold">${data.processor}</span></p>
+                        <p>• Network Speed: <span class="text-white font-semibold">${data.networkPerformance}</span></p>
+                        <p>• Hypervisor: <span class="text-white font-semibold">${data.hypervisor}</span></p>
+                        <p>• EBS Optimized: <span class="text-white font-semibold">${data.ebsOptimized ? 'True' : 'False'}</span></p>
+                    </div>
+                `;
+            } catch (err) {
+                outputBox.innerHTML = `<p class="text-red-400">Failed to connect to cloud provider endpoint.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

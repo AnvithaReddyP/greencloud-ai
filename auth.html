@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCloud AI - Authentication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .input-field {
+            background: rgba(2, 6, 23, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #f1f5f9;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+            outline: none;
+        }
+
+        /* Animated Background Blobs */
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+
+        .blob-1 {
+            background: radial-gradient(circle, #10b981, transparent 70%);
+            width: 400px;
+            height: 400px;
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            background: radial-gradient(circle, #06b6d4, transparent 70%);
+            width: 500px;
+            height: 500px;
+            bottom: -150px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.1); }
+        }
+
+        .form-transition {
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+        }
+
+        .hidden-form {
+            opacity: 0;
+            pointer-events: none;
+            position: absolute;
+            transform: translateX(50px);
+        }
+
+        .active-form {
+            opacity: 1;
+            pointer-events: auto;
+            position: relative;
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center relative text-slate-200">
+    
+    <!-- Background Animations -->
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="w-full max-w-md p-6 relative z-10">
+        <!-- Logo Header -->
+        <div class="text-center mb-8 transform hover:scale-105 transition duration-300">
+            <div class="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-600 items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)] mb-4">
+                <i class="fa-solid fa-leaf text-slate-950 text-3xl font-bold"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-white">GreenCloud AI</h1>
+            <p class="text-slate-400 text-sm mt-2">Intelligent infrastructure, scaled sustainably.</p>
+        </div>
+
+        <div class="glass-panel rounded-3xl p-8 relative overflow-hidden">
+            
+            <!-- Login Form -->
+            <div id="loginForm" class="active-form form-transition w-full">
+                <h2 class="text-2xl font-bold text-white mb-6">Welcome Back</h2>
+                <form class="space-y-5" onsubmit="event.preventDefault(); window.location.href='/';">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                            <input type="email" id="loginEmail" required placeholder="name@company.com" class="input-field w-full rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-0">
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Password</label>
+                            <a href="#" class="text-xs text-emerald-400 hover:text-emerald-300 transition">Forgot password?</a>
+                        </div>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                            <input type="password" id="loginPassword" required placeholder="••••••••" class="input-field w-full rounded-xl py-3 pl-11 pr-4 text-sm focus:ring-0">
+                        </div>
+                    </div>
+                    
+                    <div id="loginError" class="text-red-400 text-xs hidden">Invalid credentials.</div>
+                    
+                    <button type="button" onclick="handleLogin()" class="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all transform hover:-translate-y-0.5">
+                        Sign In <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </button>
+                </form>
+                
+                <p class="text-center text-sm text-slate-400 mt-6">
+                    Don't have an account? 
+                    <button onclick="toggleForm('signup')" class="text-emerald-400 font-semibold hover:text-emerald-300 transition hover:underline">Create one</button>
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="hidden-form form-transition w-full">
+                <h2 class="text-2xl font-bold text-white mb-6">Create Account</h2>
+                <form class="space-y-4" onsubmit="event.preventDefault(); window.location.href='/';">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                            <input type="text" id="signupName" required placeholder="John Doe" class="input-field w-full rounded-xl py-2.5 pl-11 pr-4 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Email Address</label>
+                        <div class="relative">
+                            <i class="fa-regular fa-envelope absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                            <input type="email" id="signupEmail" required placeholder="name@company.com" class="input-field w-full rounded-xl py-2.5 pl-11 pr-4 text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Password</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
+                            <input type="password" id="signupPassword" required placeholder="••••••••" class="input-field w-full rounded-xl py-2.5 pl-11 pr-4 text-sm">
+                        </div>
+                    </div>
+                    
+                    <div id="signupError" class="text-red-400 text-xs hidden">Registration failed.</div>
+
+                    <button type="button" onclick="handleSignup()" class="w-full py-3.5 mt-4 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-sm shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all transform hover:-translate-y-0.5">
+                        Create Account
+                    </button>
+                </form>
+                
+                <p class="text-center text-sm text-slate-400 mt-6">
+                    Already have an account? 
+                    <button onclick="toggleForm('login')" class="text-emerald-400 font-semibold hover:text-emerald-300 transition hover:underline">Sign In</button>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Social Auth -->
+        <div class="mt-8 flex items-center justify-center gap-4 opacity-70">
+            <div class="h-px w-16 bg-slate-700"></div>
+            <span class="text-xs text-slate-500 uppercase tracking-widest font-semibold">Or continue with</span>
+            <div class="h-px w-16 bg-slate-700"></div>
+        </div>
+        <div class="mt-6 flex justify-center gap-4">
+            <button class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-slate-800 transition transform hover:-translate-y-1 hover:text-white text-slate-400">
+                <i class="fa-brands fa-github text-xl"></i>
+            </button>
+            <button class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-slate-800 transition transform hover:-translate-y-1 hover:text-white text-slate-400">
+                <i class="fa-brands fa-google text-xl"></i>
+            </button>
+            <button class="w-12 h-12 rounded-full glass-panel flex items-center justify-center hover:bg-slate-800 transition transform hover:-translate-y-1 hover:text-white text-slate-400">
+                <i class="fa-brands fa-microsoft text-xl"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function toggleForm(type) {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            
+            if (type === 'signup') {
+                loginForm.classList.remove('active-form');
+                loginForm.classList.add('hidden-form');
+                loginForm.style.transform = 'translateX(-50px)';
+                
+                setTimeout(() => {
+                    signupForm.classList.remove('hidden-form');
+                    signupForm.classList.add('active-form');
+                }, 100);
+            } else {
+                signupForm.classList.remove('active-form');
+                signupForm.classList.add('hidden-form');
+                signupForm.style.transform = 'translateX(50px)';
+                
+                setTimeout(() => {
+                    loginForm.style.transform = 'translateX(0)';
+                    loginForm.classList.remove('hidden-form');
+                    loginForm.classList.add('active-form');
+                }, 100);
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const res = await fetch('/api/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            });
+            if (res.ok) {
+                window.location.href = '/';
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        async function handleSignup() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const res = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, email, password})
+            });
+            if (res.ok) {
+                alert("Account created successfully! Please sign in with your new credentials.");
+                toggleForm('login');
+                document.getElementById('loginEmail').value = email;
+                document.getElementById('loginPassword').value = '';
+                document.getElementById('signupError').classList.add('hidden');
+            } else {
+                document.getElementById('signupError').classList.remove('hidden');
+                document.getElementById('signupError').innerText = (await res.json()).detail || "Registration failed";
+            }
+        }
+    </script>
+</body>
+</html>
