@@ -307,7 +307,7 @@ autoscaler_state = {
             "id": "i-" + "".join(random.choices("0123456789abcdef", k=17)),
             "ip": "10.0.1.100",
             "status": "Running",
-            "region": "us-west-1 (North America)",
+            "region": "Docker (Local Host)",
             "created_at": time.time()
         }
     ]
@@ -343,10 +343,6 @@ def get_autoscale_status(session_id: Optional[str] = None):
         
     total_users = max(1, base_user_count + len(active_sessions) - 1)
     target_vms = max(1, total_users // 2)
-    
-    current_reg = orchestrator_state["current_region"]
-    reg_meta = REGIONS_METADATA.get(current_reg, REGIONS_METADATA["na"])
-    reg_label = reg_meta["datacenter"]
 
     # Scale up
     while len(autoscaler_state["instances"]) < target_vms:
@@ -370,7 +366,7 @@ def get_autoscale_status(session_id: Optional[str] = None):
             "id": inst_id,
             "ip": ip,
             "status": "Initializing",
-            "region": reg_label,
+            "region": "Docker (Local Host)",
             "created_at": current_time,
             "is_docker": is_docker,
             "container_name": name if is_docker else None
@@ -387,23 +383,18 @@ def get_autoscale_status(session_id: Optional[str] = None):
                 pass
         
     total_watts = len(autoscaler_state["instances"]) * 45.0
-    reg_intensity = get_cached_region_intensity(current_reg)
-    # Calculate carbon draw in kg CO2 per hour: (watts / 1000) * (intensity / 1000)
-    carbon_kg_hr = round((total_watts / 1000.0) * (reg_intensity / 1000.0), 3)
+    # Calculate carbon draw in kg CO2 per hour: (watts / 1000) * (0.350 standard emission factor)
+    carbon_kg_hr = round((total_watts / 1000.0) * 0.350, 3)
 
     autoscaler_state["activeUsers"] = total_users
     autoscaler_state["allocatedVMs"] = len(autoscaler_state["instances"])
     autoscaler_state["totalPowerWatts"] = total_watts
-    autoscaler_state["currentRegion"] = current_reg
-    autoscaler_state["gridIntensity"] = reg_intensity
     autoscaler_state["carbonKgHr"] = carbon_kg_hr
-    autoscaler_state["regionLabel"] = reg_meta["name"]
 
     for inst in autoscaler_state["instances"]:
         if inst["status"] == "Initializing" and (current_time - inst.get("created_at", current_time)) > 3:
             inst["status"] = "Running"
-        # Keep instances region in sync with active orchestrator region
-        inst["region"] = reg_label
+        inst["region"] = "Docker (Local Host)"
             
     return autoscaler_state
 
@@ -486,8 +477,6 @@ def get_orchestrator_status():
         }
         orchestrator_state["logs"].append(f"Auto-Orchestrator: Shifted '{orchestrator_state['workload_name']}' to Stockholm. Carbon reduced by {carbon_savings_pct}%.")
         auto_triggered = True
-        for inst in autoscaler_state["instances"]:
-            inst["region"] = REGIONS_METADATA["nordics"]["datacenter"]
 
     return {
         "mode": orchestrator_state["mode"],
@@ -531,9 +520,6 @@ def trigger_migration(req: MigrateRequest):
     }
     orchestrator_state["logs"].append(f"Manual Migration: Shifting '{orchestrator_state['workload_name']}' {source.upper()} -> {target.upper()}. Carbon cut: -{savings}%.")
 
-    for inst in autoscaler_state["instances"]:
-        inst["region"] = target_meta["datacenter"]
-
     return {
         "status": "ok",
         "from": source,
@@ -546,8 +532,6 @@ def simulate_grid_spike():
     orchestrator_state["current_region"] = "na"
     orchestrator_state["migration_status"] = "Grid Spike Detected in North America."
     orchestrator_state["logs"].append("Grid Telemetry Alert: Carbon spike registered in US-West grid (385 gCO₂eq/kWh).")
-    for inst in autoscaler_state["instances"]:
-        inst["region"] = REGIONS_METADATA["na"]["datacenter"]
     return {"status": "ok", "currentRegion": "na"}
 
 @app.post("/api/aws/instance-details")
