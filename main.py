@@ -247,6 +247,57 @@ def api_logout(request: Request, response: Response):
     response.delete_cookie("session_token")
     return {"status": "ok"}
 
+orchestrator_state = {
+    "mode": "manual",  # "manual" | "automatic"
+    "current_region": "na",  # starts in North America (US-West) so spike is apparent and actionable
+    "workload_name": "Simulation App-01",
+    "threshold": 150,  # gCO2/kWh threshold
+    "migrating": False,
+    "migration_status": "Monitoring active grid intensity",
+    "last_migration": None,
+    "logs": [
+        "Orchestrator online: Monitoring telemetry across US-West, Frankfurt, and Stockholm."
+    ]
+}
+
+REGIONS_METADATA = {
+    "na": {
+        "id": "na",
+        "name": "North America (US-West)",
+        "zone": "US-CAL-CISO",
+        "pue": 1.45,
+        "datacenter": "AWS us-west-1 (California)",
+        "renewablePct": 42
+    },
+    "eu": {
+        "id": "eu",
+        "name": "Europe (Frankfurt)",
+        "zone": "DE",
+        "pue": 1.25,
+        "datacenter": "AWS eu-central-1 (Frankfurt)",
+        "renewablePct": 68
+    },
+    "nordics": {
+        "id": "nordics",
+        "name": "Stockholm (SE-SE3)",
+        "zone": "SE-SE3",
+        "pue": 1.12,
+        "datacenter": "Stockholm EcoDataCenter (SE-SE3)",
+        "renewablePct": 100
+    }
+}
+
+INTENSITY_CACHE = {}
+
+def get_cached_region_intensity(region: str) -> int:
+    now = time.time()
+    cached = INTENSITY_CACHE.get(region)
+    if cached and (now - cached["timestamp"]) < 45:
+        return cached["intensity"]
+    val = fetch_live_electricity_intensity(region)
+    INTENSITY_CACHE[region] = {"intensity": val, "timestamp": now}
+    return val
+
 autoscaler_state = {
     "activeUsers": 2,
     "allocatedVMs": 1,
@@ -256,7 +307,7 @@ autoscaler_state = {
             "id": "i-" + "".join(random.choices("0123456789abcdef", k=17)),
             "ip": "10.0.1.100",
             "status": "Running",
-            "region": "eu-central-1",
+            "region": "us-west-1 (North America)",
             "created_at": time.time()
         }
     ]
@@ -268,6 +319,12 @@ class PingRequest(BaseModel):
 class InstanceDetailsRequest(BaseModel):
     vcpu: int
     ram: int
+
+class OrchestratorModeRequest(BaseModel):
+    mode: str
+
+class MigrateRequest(BaseModel):
+    targetRegion: str = "nordics"
 
 active_sessions = {}
 base_user_count = 1
@@ -284,13 +341,13 @@ def get_autoscale_status(session_id: Optional[str] = None):
     for sid in expired:
         del active_sessions[sid]
         
-    # Active users is base + active sessions
-    # But if someone opens a tab, we want it to count. 
-    # The buttons modify base_user_count.
     total_users = max(1, base_user_count + len(active_sessions) - 1)
-    
     target_vms = max(1, total_users // 2)
     
+    current_reg = orchestrator_state["current_region"]
+    reg_meta = REGIONS_METADATA.get(current_reg, REGIONS_METADATA["na"])
+    reg_label = reg_meta["datacenter"]
+
     # Scale up
     while len(autoscaler_state["instances"]) < target_vms:
         try:
@@ -304,16 +361,16 @@ def get_autoscale_status(session_id: Optional[str] = None):
             inst_id = f"c-{container_id}"
             is_docker = True
         except Exception:
-            # Fallback if docker isn't running
             inst_id = "i-" + "".join(random.choices("0123456789abcdef", k=17))
             ip = f"10.0.{random.randint(1,255)}.{random.randint(1,255)}"
             is_docker = False
+            name = None
             
         autoscaler_state["instances"].append({
             "id": inst_id,
             "ip": ip,
             "status": "Initializing",
-            "region": "local-laptop",
+            "region": reg_label,
             "created_at": current_time,
             "is_docker": is_docker,
             "container_name": name if is_docker else None
@@ -324,19 +381,29 @@ def get_autoscale_status(session_id: Optional[str] = None):
         inst_to_remove = autoscaler_state["instances"].pop()
         if inst_to_remove.get("is_docker"):
             try:
-                # Use rm -f for instant termination (stop takes 10s and blocks the server)
                 target = inst_to_remove.get("container_name") or inst_to_remove["id"][2:]
                 subprocess.Popen(["docker", "rm", "-f", target])
             except Exception:
                 pass
         
+    total_watts = len(autoscaler_state["instances"]) * 45.0
+    reg_intensity = get_cached_region_intensity(current_reg)
+    # Calculate carbon draw in kg CO2 per hour: (watts / 1000) * (intensity / 1000)
+    carbon_kg_hr = round((total_watts / 1000.0) * (reg_intensity / 1000.0), 3)
+
     autoscaler_state["activeUsers"] = total_users
     autoscaler_state["allocatedVMs"] = len(autoscaler_state["instances"])
-    autoscaler_state["totalPowerWatts"] = len(autoscaler_state["instances"]) * 45.0
+    autoscaler_state["totalPowerWatts"] = total_watts
+    autoscaler_state["currentRegion"] = current_reg
+    autoscaler_state["gridIntensity"] = reg_intensity
+    autoscaler_state["carbonKgHr"] = carbon_kg_hr
+    autoscaler_state["regionLabel"] = reg_meta["name"]
 
     for inst in autoscaler_state["instances"]:
         if inst["status"] == "Initializing" and (current_time - inst.get("created_at", current_time)) > 3:
             inst["status"] = "Running"
+        # Keep instances region in sync with active orchestrator region
+        inst["region"] = reg_label
             
     return autoscaler_state
 
@@ -345,6 +412,143 @@ def ping_autoscaler(req: PingRequest):
     global base_user_count
     base_user_count = req.users
     return get_autoscale_status()
+
+@app.get("/api/orchestrator/status")
+def get_orchestrator_status():
+    na_intensity = get_cached_region_intensity("na")
+    eu_intensity = get_cached_region_intensity("eu")
+    nordics_intensity = get_cached_region_intensity("nordics")
+
+    regions_data = {
+        "na": {
+            **REGIONS_METADATA["na"],
+            "intensity": na_intensity,
+            "status": "High Carbon Spike (Grid Stress)" if na_intensity > 150 else "Moderate Grid Load"
+        },
+        "eu": {
+            **REGIONS_METADATA["eu"],
+            "intensity": eu_intensity,
+            "status": "Moderate Grid Load"
+        },
+        "nordics": {
+            **REGIONS_METADATA["nordics"],
+            "intensity": nordics_intensity,
+            "status": "Ultra-Clean (100% Wind & Hydro)"
+        }
+    }
+
+    current_reg = orchestrator_state["current_region"]
+    curr_intensity = regions_data[current_reg]["intensity"]
+    target_intensity = regions_data["nordics"]["intensity"]
+
+    if current_reg != "nordics" and curr_intensity > 0:
+        carbon_savings_pct = round(((curr_intensity - target_intensity) / curr_intensity) * 100, 1)
+        recommendation = {
+            "triggered": True,
+            "alertType": "URGENT",
+            "sourceRegion": current_reg,
+            "sourceName": regions_data[current_reg]["name"],
+            "sourceIntensity": curr_intensity,
+            "targetRegion": "nordics",
+            "targetName": "Stockholm (100% Wind/Hydro)",
+            "targetIntensity": target_intensity,
+            "workload": orchestrator_state["workload_name"],
+            "carbonSavingsPct": carbon_savings_pct,
+            "message": f"URGENT: Grid spike in {regions_data[current_reg]['name']} ({curr_intensity} gCO₂eq/kWh). Suggest migrating '{orchestrator_state['workload_name']}' to Stockholm (100% wind/hydro, {target_intensity} gCO₂eq/kWh). Action: -{carbon_savings_pct}% Carbon Emissions."
+        }
+    else:
+        carbon_savings_pct = 0.0
+        recommendation = {
+            "triggered": False,
+            "alertType": "OPTIMAL",
+            "sourceRegion": current_reg,
+            "sourceName": regions_data[current_reg]["name"],
+            "sourceIntensity": curr_intensity,
+            "targetRegion": "nordics",
+            "targetName": "Stockholm (100% Wind/Hydro)",
+            "targetIntensity": target_intensity,
+            "workload": orchestrator_state["workload_name"],
+            "carbonSavingsPct": 0.0,
+            "message": f"Optimal: '{orchestrator_state['workload_name']}' is actively running in Stockholm (100% wind/hydro clean grid, {curr_intensity} gCO₂eq/kWh). Carbon footprint minimized."
+        }
+
+    # Automatic mode handler: if automatic mode is active and current region is spiking, shift automatically
+    auto_triggered = False
+    if orchestrator_state["mode"] == "automatic" and current_reg != "nordics":
+        orchestrator_state["current_region"] = "nordics"
+        orchestrator_state["migration_status"] = "Migration Complete: EU-Stockholm Active (100% Wind/Hydro)"
+        orchestrator_state["last_migration"] = {
+            "timestamp": time.time(),
+            "from": current_reg,
+            "to": "nordics",
+            "workload": orchestrator_state["workload_name"],
+            "savingsPct": carbon_savings_pct
+        }
+        orchestrator_state["logs"].append(f"Auto-Orchestrator: Shifted '{orchestrator_state['workload_name']}' to Stockholm. Carbon reduced by {carbon_savings_pct}%.")
+        auto_triggered = True
+        for inst in autoscaler_state["instances"]:
+            inst["region"] = REGIONS_METADATA["nordics"]["datacenter"]
+
+    return {
+        "mode": orchestrator_state["mode"],
+        "currentRegion": orchestrator_state["current_region"],
+        "currentRegionName": regions_data[orchestrator_state["current_region"]]["name"],
+        "currentIntensity": regions_data[orchestrator_state["current_region"]]["intensity"],
+        "workloadName": orchestrator_state["workload_name"],
+        "regions": regions_data,
+        "recommendation": recommendation,
+        "migrationStatus": orchestrator_state["migration_status"],
+        "lastMigration": orchestrator_state["last_migration"],
+        "autoTriggered": auto_triggered,
+        "logs": orchestrator_state["logs"][-8:]
+    }
+
+@app.post("/api/orchestrator/mode")
+def set_orchestrator_mode(req: OrchestratorModeRequest):
+    if req.mode in ["automatic", "manual"]:
+        orchestrator_state["mode"] = req.mode
+        orchestrator_state["logs"].append(f"Orchestrator mode set to: {req.mode.upper()}")
+    return {"mode": orchestrator_state["mode"]}
+
+@app.post("/api/orchestrator/migrate")
+def trigger_migration(req: MigrateRequest):
+    source = orchestrator_state["current_region"]
+    target = req.targetRegion
+    orchestrator_state["current_region"] = target
+    target_meta = REGIONS_METADATA.get(target, REGIONS_METADATA["nordics"])
+    orchestrator_state["migration_status"] = f"Migration Complete: {target_meta['name']} Active."
+    
+    source_intensity = get_cached_region_intensity(source)
+    target_intensity = get_cached_region_intensity(target)
+    savings = round(((source_intensity - target_intensity) / max(1, source_intensity)) * 100, 1)
+
+    orchestrator_state["last_migration"] = {
+        "timestamp": time.time(),
+        "from": source,
+        "to": target,
+        "workload": orchestrator_state["workload_name"],
+        "savingsPct": savings
+    }
+    orchestrator_state["logs"].append(f"Manual Migration: Shifting '{orchestrator_state['workload_name']}' {source.upper()} -> {target.upper()}. Carbon cut: -{savings}%.")
+
+    for inst in autoscaler_state["instances"]:
+        inst["region"] = target_meta["datacenter"]
+
+    return {
+        "status": "ok",
+        "from": source,
+        "to": target,
+        "savingsPct": savings
+    }
+
+@app.post("/api/orchestrator/simulate-spike")
+def simulate_grid_spike():
+    orchestrator_state["current_region"] = "na"
+    orchestrator_state["migration_status"] = "Grid Spike Detected in North America."
+    orchestrator_state["logs"].append("Grid Telemetry Alert: Carbon spike registered in US-West grid (385 gCO₂eq/kWh).")
+    for inst in autoscaler_state["instances"]:
+        inst["region"] = REGIONS_METADATA["na"]["datacenter"]
+    return {"status": "ok", "currentRegion": "na"}
 
 @app.post("/api/aws/instance-details")
 def get_instance_details(req: InstanceDetailsRequest):

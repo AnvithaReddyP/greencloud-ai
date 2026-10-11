@@ -1,89 +1,402 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenCloud AI - Live Traffic Auto-Scaler</title>
+    <title>GreenCloud AI - Intelligent Green Orchestrator & Live Scaling</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darker: '#090d16',
+                        card: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.6); }
+        }
+        .pulse-green {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+        @keyframes pulseRed {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.6); }
+        }
+        .pulse-red {
+            animation: pulseRed 1.8s infinite ease-in-out;
+        }
+        @keyframes flowBeam {
+            0% { stroke-dashoffset: 40; }
+            100% { stroke-dashoffset: 0; }
+        }
+        .animated-beam {
+            stroke-dasharray: 6, 6;
+            animation: flowBeam 1.2s linear infinite;
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen p-6 font-sans">
-    <div class="max-w-5xl mx-auto space-y-6">
-        <!-- Header -->
-        <div class="flex justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
-            <div>
-                <h1 class="text-2xl font-bold text-cyan-400">🌐 Live Traffic Auto-Scale & Instance Inspector</h1>
-                <p class="text-slate-400 text-sm mt-1">Demonstrating automatic VM allocation based on concurrent user traffic.</p>
+<body class="bg-darker text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-leaf text-slate-950 text-xl font-bold"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl font-extrabold tracking-tight text-white">GreenCloud AI</span>
+                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400">v3.0</span>
+                    </div>
+                    <p class="text-xs text-slate-400">Intelligent Green Orchestrator &bull; Carbon-Aware Workload Migration</p>
+                </div>
             </div>
-            <div class="flex gap-3">
-                <a href="/" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Dashboard</a>
-                <a href="/live-scaling" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-medium transition">Live Scaling</a>
-                <button onclick="logoutUser()" class="px-4 py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 border border-slate-700 hover:border-red-500/50 text-slate-200 rounded-xl text-sm font-medium transition">Log Out</button>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                <a href="/" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders"></i><span>Cloud Matcher</span>
+                </a>
+                <a href="/autoscale" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-network-wired"></i><span>Auto-Scaler</span>
+                </a>
+                <a href="/live-scaling" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-emerald-400 bg-emerald-950 border border-emerald-500/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-bolt"></i><span>Green Orchestrator</span>
+                </a>
+            </nav>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="logoutUser()" class="flex items-center space-x-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 border border-slate-700 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Log Out</span>
+                </button>
             </div>
         </div>
+    </header>
 
-        <!-- Simulation Control Center -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                <p class="text-slate-400 text-sm font-medium">Active Website Visitors</p>
-                <div class="flex items-baseline gap-3 mt-2">
+    <!-- Main Content Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
+        
+        <!-- Live Traffic & Telemetry Cards Row -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Active Visitors Card -->
+            <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Concurrent Workload Traffic</span>
+                    <i class="fa-solid fa-users text-cyan-400 text-lg"></i>
+                </div>
+                <div class="flex items-baseline gap-3 my-2">
                     <span id="userCountDisplay" class="text-4xl font-extrabold text-cyan-400">2</span>
-                    <span class="text-xs text-slate-500">users connected</span>
+                    <span class="text-xs text-slate-400">active concurrent users</span>
                 </div>
                 <div class="mt-4 flex gap-2">
-                    <button onclick="simulateUsers(1)" class="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-xs font-semibold transition">+ Add User</button>
-                    <button onclick="simulateUsers(-1)" class="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">- Remove</button>
+                    <button onclick="simulateUsers(1)" class="flex-1 px-3 py-2 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-plus"></i><span>Add Traffic (+1)</span>
+                    </button>
+                    <button onclick="simulateUsers(-1)" class="flex-1 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-minus"></i><span>Decrease (-1)</span>
+                    </button>
                 </div>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                <p class="text-slate-400 text-sm font-medium">Dynamically Allocated VMs</p>
-                <div class="flex items-baseline gap-3 mt-2">
+            <!-- Dynamically Allocated VMs -->
+            <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dynamic Compute Cluster</span>
+                    <i class="fa-solid fa-server text-emerald-400 text-lg"></i>
+                </div>
+                <div class="flex items-baseline gap-3 my-2">
                     <span id="vmCountDisplay" class="text-4xl font-extrabold text-emerald-400">1</span>
-                    <span class="text-xs text-slate-500">instances active</span>
+                    <span class="text-xs text-slate-400">VMs active (1 per 2 users)</span>
                 </div>
-                <p class="text-xs text-slate-400 mt-4">Rule: 1 VM spawned per 2 concurrent users.</p>
+                <p class="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-emerald-500"></i> Elastic container autoscaler online
+                </p>
             </div>
 
-            <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-lg">
-                <p class="text-slate-400 text-sm font-medium">Energy Draw & Carbon</p>
-                <div class="flex items-baseline gap-3 mt-2">
+            <!-- Active Impact Visualization: Live Energy Draw & Carbon -->
+            <div class="glass-panel rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden" id="carbonImpactCard">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Live Energy Draw & Carbon</span>
+                    <i class="fa-solid fa-bolt text-amber-400 text-lg"></i>
+                </div>
+                <div class="flex items-baseline gap-3 my-2">
                     <span id="powerDisplay" class="text-4xl font-extrabold text-amber-400">45.0</span>
-                    <span class="text-xs text-slate-500">Watts total</span>
+                    <span class="text-xs text-slate-400">Watts Total</span>
                 </div>
-                <p id="carbonDisplay" class="text-xs text-emerald-400 mt-4">0.1 kg CO₂ / hr (Nordics Grid)</p>
+                <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-800">
+                    <div>
+                        <span class="text-[10px] text-slate-400 uppercase block">Active Emission Rate</span>
+                        <p id="carbonDisplay" class="text-xs font-bold text-emerald-400 transition-all duration-300">Calculating live grid draw...</p>
+                    </div>
+                    <span id="liveSavingsBadge" class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-950 border border-emerald-500/30 text-emerald-400 transition-all duration-300">
+                        Live Tracking
+                    </span>
+                </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Live Instances Grid -->
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg">
-            <div class="flex justify-between items-center">
+        <!-- Intelligent Green Orchestrator: Carbon-Aware Workload Migration Control Center -->
+        <section class="glass-panel rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden border border-slate-800">
+            <div class="absolute -right-20 -top-20 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <!-- Section Title & Controls Bar -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-slate-800">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-200">Active Virtual Machines Cluster</h2>
-                    <p class="text-xs text-slate-400">Live view of dynamically provisioned instances responding to traffic.</p>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Intelligent Green Orchestrator
+                        </span>
+                        <span id="orchestratorStatusBadge" class="text-xs text-slate-400 font-medium">Monitoring Electricity Maps Telemetry</span>
+                    </div>
+                    <h2 class="text-xl lg:text-2xl font-extrabold text-white tracking-tight">Automated Carbon-Aware Workload Migration</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">Autonomous decision engine shifting compute workloads to green power regions during grid carbon spikes.</p>
                 </div>
+
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Migration Mode Toggle -->
+                    <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+                        <span class="text-xs font-semibold text-slate-400 px-2">Mode:</span>
+                        <button type="button" id="modeManualBtn" onclick="setOrchestratorMode('manual')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition cursor-pointer">
+                            ⚙️ Manual Recommendation
+                        </button>
+                        <button type="button" id="modeAutoBtn" onclick="setOrchestratorMode('automatic')" class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">
+                            🤖 Automatic Migration
+                        </button>
+                    </div>
+
+                    <!-- Simulate Grid Spike Button -->
+                    <button onclick="simulateGridSpike()" class="bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/50 border border-slate-700 text-slate-300 font-bold px-3.5 py-2 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-400"></i><span>Simulate US-West Grid Spike</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Workload & Dynamic Migration Banner -->
+            <div id="migrationAlertCard" class="mb-6 p-5 rounded-2xl border transition-all duration-300 bg-slate-900/80 border-slate-800">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-start gap-4">
+                        <div id="alertIconBox" class="w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            <i class="fa-solid fa-leaf"></i>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <span id="alertTypeBadge" class="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                                    Status: Optimal
+                                </span>
+                                <span class="text-xs font-bold text-white" id="workloadHeaderLabel">Workload: Simulation App-01</span>
+                            </div>
+                            <p id="recommendationMessage" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
+                                Monitoring regional grid telemetry...
+                            </p>
+                        </div>
+                    </div>
+                    <div id="actionBtnContainer" class="shrink-0 flex items-center gap-2">
+                        <!-- Dynamic Migrate Now button will appear here -->
+                    </div>
+                </div>
+
+                <!-- Migration Pipeline Stepper (Visible during or after migration) -->
+                <div id="migrationPipeline" class="mt-4 pt-4 border-t border-slate-800 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                    <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2" id="step1">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>1. Telemetry Spike Detect</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2" id="step2">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>2. Memory State Sync</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2" id="step3">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>3. BGP Anycast Re-route</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 flex items-center gap-2" id="step4">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+                        <span>4. Stockholm Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cross-Region Deployment Topology Map / Active Migrations -->
+            <div class="bg-slate-900/60 p-6 rounded-2xl border border-slate-800 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-globe text-cyan-400"></i> Active Regional Deployment Topology
+                    </span>
+                    <span class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Live Electricity Maps Sync
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                    <!-- Region 1: North America (US-West) -->
+                    <div id="regionCard_na" class="p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-slate-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-location-dot text-slate-400"></i> North America (US-West)
+                            </span>
+                            <span id="regionBadge_na" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
+                                AWS us-west-1
+                            </span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Grid Carbon Intensity:</span>
+                                <strong id="intensity_na" class="text-amber-400 font-mono text-sm">-- gCO₂eq/kWh</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Renewable Sourcing:</span>
+                                <strong class="text-slate-200">42% (Fossil mix)</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Datacenter PUE:</span>
+                                <strong class="text-slate-200">1.45</strong>
+                            </div>
+                        </div>
+                        <div id="regionHostTag_na" class="mt-4 pt-3 border-t border-slate-800/80 text-center text-[11px] font-bold">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Region 2: Europe (Frankfurt) -->
+                    <div id="regionCard_eu" class="p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-slate-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-location-dot text-slate-400"></i> Europe (Frankfurt)
+                            </span>
+                            <span id="regionBadge_eu" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300">
+                                AWS eu-central-1
+                            </span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Grid Carbon Intensity:</span>
+                                <strong id="intensity_eu" class="text-cyan-400 font-mono text-sm">-- gCO₂eq/kWh</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Renewable Sourcing:</span>
+                                <strong class="text-slate-200">68% (Solar/Wind)</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Datacenter PUE:</span>
+                                <strong class="text-slate-200">1.25</strong>
+                            </div>
+                        </div>
+                        <div id="regionHostTag_eu" class="mt-4 pt-3 border-t border-slate-800/80 text-center text-[11px] font-bold">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Region 3: Stockholm (Nordics - Green Destination) -->
+                    <div id="regionCard_nordics" class="p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-emerald-500/40 pulse-green">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-location-dot text-emerald-400"></i> Stockholm (SE-SE3)
+                            </span>
+                            <span id="regionBadge_nordics" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                                100% Clean Grid
+                            </span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between text-slate-400">
+                                <span>Grid Carbon Intensity:</span>
+                                <strong id="intensity_nordics" class="text-emerald-400 font-mono text-sm">-- gCO₂eq/kWh</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Renewable Sourcing:</span>
+                                <strong class="text-emerald-300">100% (Hydro & Wind)</strong>
+                            </div>
+                            <div class="flex justify-between text-slate-400">
+                                <span>Datacenter PUE:</span>
+                                <strong class="text-emerald-300">1.12 Ultra-Efficient</strong>
+                            </div>
+                        </div>
+                        <div id="regionHostTag_nordics" class="mt-4 pt-3 border-t border-slate-800/80 text-center text-[11px] font-bold">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orchestrator Audit Log Console -->
+            <div class="bg-slate-950/90 rounded-2xl p-4 border border-slate-800/90 font-mono text-xs text-slate-300">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 text-slate-400">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-emerald-400"></i> Orchestrator Event Log Stream
+                    </span>
+                    <span class="text-[10px] text-slate-500">Autonomous Decision Journal</span>
+                </div>
+                <div id="orchestratorLogs" class="space-y-1 max-h-32 overflow-y-auto text-[11px] text-slate-300">
+                    <div>[00:00:00] Initializing Green Orchestrator connection...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Active Virtual Machines Cluster Grid -->
+        <section class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired text-emerald-400"></i><span>Active Virtual Machines Cluster</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Dynamic instance fleet reflecting live workload allocation & geographical host region.</p>
+                </div>
+                <span id="clusterHostBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-900 border border-slate-700 text-slate-300">
+                    Host: Local Cluster
+                </span>
             </div>
             <div id="instancesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <p class="text-sm text-slate-500">Fetching live cluster status...</p>
             </div>
-        </div>
+        </section>
 
         <!-- Live Access Key Instance Inspector -->
-        <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-lg">
-            <div class="flex justify-between items-center">
+        <section class="glass-panel rounded-2xl p-6 border border-slate-800 space-y-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-200">Live Cloud Instance Inspector</h2>
-                    <p class="text-xs text-slate-400">Inspect the exact underlying hardware specs of your active instances using your configured access key.</p>
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-key text-cyan-400"></i><span>Live Cloud Instance Inspector</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Inspect the exact underlying hardware and hypervisor specs via your authenticated cloud access key.</p>
                 </div>
-                <button onclick="fetchInstanceDetails()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-semibold transition shadow-md">Inspect via Access Key</button>
+                <button onclick="fetchInstanceDetails()" class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 cursor-pointer">
+                    Inspect via Access Key
+                </button>
             </div>
 
-            <div id="inspectorOutput" class="bg-slate-950 border border-slate-800 p-5 rounded-xl font-mono text-xs text-slate-300 space-y-2">
-                <p class="text-slate-500">Click "Inspect via Access Key" to query live cloud metadata and configuration details...</p>
+            <div id="inspectorOutput" class="bg-slate-950/80 border border-slate-800 p-5 rounded-xl font-mono text-xs text-slate-300 space-y-2">
+                <p class="text-slate-500">Click "Inspect via Access Key" to query live cloud metadata and Nitro hardware configuration...</p>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/80 py-6 text-center text-xs text-slate-500 mt-12">
+        <p>GreenCloud AI v3.0 &bull; Intelligent Carbon-Aware Workload Migration & Load Balancer</p>
+    </footer>
 
     <script>
+        const sessionId = Math.random().toString(36).substring(2, 15);
+        let currentOrchestratorState = null;
+        let isMigratingUI = false;
+
         function renderGrid(instances) {
             const grid = document.getElementById('instancesGrid');
             if (!instances || instances.length === 0) {
@@ -91,22 +404,20 @@
                 return;
             }
             grid.innerHTML = instances.map(inst => `
-                <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-inner">
+                <div class="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow-inner">
                     <div class="flex justify-between items-center mb-3">
                         <span class="font-mono text-xs font-bold text-slate-300">ID: ${inst.id}</span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${inst.status === 'Running' ? 'bg-emerald-950 text-emerald-400 border-emerald-500/30' : 'bg-amber-950 text-amber-400 border-amber-500/30'} border animate-pulse">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${inst.status === 'Running' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950 text-amber-400 border border-amber-500/30 animate-pulse'}">
                             ${inst.status.toUpperCase()}
                         </span>
                     </div>
-                    <div class="text-xs text-slate-400 space-y-1">
-                        <p><i class="fa-solid fa-network-wired w-4 text-cyan-500"></i> ${inst.ip}</p>
-                        <p><i class="fa-solid fa-globe w-4 text-cyan-500"></i> ${inst.region}</p>
+                    <div class="text-xs text-slate-400 space-y-1.5">
+                        <p class="flex items-center gap-2"><i class="fa-solid fa-network-wired w-4 text-cyan-400"></i> ${inst.ip}</p>
+                        <p class="flex items-center gap-2"><i class="fa-solid fa-location-dot w-4 text-emerald-400"></i> <strong class="text-slate-200">${inst.region || 'Active Region'}</strong></p>
                     </div>
                 </div>
             `).join('');
         }
-
-        const sessionId = Math.random().toString(36).substring(2, 15);
 
         async function updateStatus() {
             try {
@@ -114,11 +425,193 @@
                 let data = await res.json();
                 document.getElementById('userCountDisplay').innerText = data.activeUsers;
                 document.getElementById('vmCountDisplay').innerText = data.allocatedVMs;
-                document.getElementById('powerDisplay').innerText = data.totalPowerWatts.toFixed(1);
+                
+                const watts = data.totalPowerWatts;
+                document.getElementById('powerDisplay').innerText = watts.toFixed(1);
+
+                // Dynamic Live Energy Draw & Carbon Update
+                const carbonKgHr = data.carbonKgHr || (watts * 0.022 / 1000);
+                const regionLabel = data.regionLabel || (data.currentRegion === 'na' ? 'North America' : 'Stockholm');
+                const intensity = data.gridIntensity || (data.currentRegion === 'na' ? 265 : 22);
+
+                document.getElementById('carbonDisplay').innerText = `${carbonKgHr.toFixed(3)} kg CO₂ / hr (${regionLabel} • ${intensity} g/kWh)`;
+                
+                const savingsBadge = document.getElementById('liveSavingsBadge');
+                if (data.currentRegion === 'nordics') {
+                    savingsBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-950 border border-emerald-500/40 text-emerald-300";
+                    savingsBadge.innerHTML = '<i class="fa-solid fa-leaf mr-1"></i> 100% Clean Grid (-91.7% CO₂)';
+                } else {
+                    savingsBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-red-950 border border-red-500/40 text-red-300";
+                    savingsBadge.innerHTML = '<i class="fa-solid fa-bolt mr-1"></i> High Carbon Grid (Spike)';
+                }
+
+                document.getElementById('clusterHostBadge').innerText = `Host Region: ${regionLabel}`;
+
                 renderGrid(data.instances);
             } catch (err) {
-                console.error("Error fetching status:", err);
+                console.error("Error fetching autoscaler status:", err);
             }
+        }
+
+        async function fetchOrchestratorStatus() {
+            if (isMigratingUI) return; // avoid overwriting smooth UI animation
+            try {
+                let res = await fetch('/api/orchestrator/status');
+                let data = await res.json();
+                currentOrchestratorState = data;
+
+                // Mode Button Styles
+                const manualBtn = document.getElementById('modeManualBtn');
+                const autoBtn = document.getElementById('modeAutoBtn');
+                if (data.mode === 'automatic') {
+                    autoBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition cursor-pointer";
+                    manualBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer";
+                    document.getElementById('orchestratorStatusBadge').innerText = "Autonomous Migration Engine Active";
+                } else {
+                    manualBtn.className = "px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition cursor-pointer";
+                    autoBtn.className = "px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer";
+                    document.getElementById('orchestratorStatusBadge').innerText = "Manual Recommendation Mode";
+                }
+
+                // Update Regional Telemetry on Topology Cards
+                if (data.regions) {
+                    if (data.regions.na) document.getElementById('intensity_na').innerText = `${data.regions.na.intensity} gCO₂eq/kWh`;
+                    if (data.regions.eu) document.getElementById('intensity_eu').innerText = `${data.regions.eu.intensity} gCO₂eq/kWh`;
+                    if (data.regions.nordics) document.getElementById('intensity_nordics').innerText = `${data.regions.nordics.intensity} gCO₂eq/kWh`;
+                }
+
+                // Update Topology Host Tags
+                const tagNa = document.getElementById('regionHostTag_na');
+                const tagEu = document.getElementById('regionHostTag_eu');
+                const tagNordics = document.getElementById('regionHostTag_nordics');
+                const cardNa = document.getElementById('regionCard_na');
+                const cardNordics = document.getElementById('regionCard_nordics');
+
+                if (data.currentRegion === 'na') {
+                    tagNa.innerHTML = '<span class="text-red-400"><i class="fa-solid fa-triangle-exclamation mr-1"></i> ACTIVE HOST (CARBON SPIKE)</span>';
+                    tagNordics.innerHTML = '<span class="text-emerald-400"><i class="fa-solid fa-arrow-right-to-bracket mr-1"></i> TARGET GREEN DESTINATION</span>';
+                    cardNa.className = "p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-red-500/50 pulse-red";
+                    cardNordics.className = "p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-emerald-500/30";
+                } else {
+                    tagNa.innerHTML = '<span class="text-slate-500">IDLE REGION</span>';
+                    tagNordics.innerHTML = '<span class="text-emerald-400"><i class="fa-solid fa-circle-check mr-1"></i> ACTIVE GREEN HOST (100% CLEAN)</span>';
+                    cardNa.className = "p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-slate-800";
+                    cardNordics.className = "p-5 rounded-2xl border transition-all duration-300 relative bg-slate-950/70 border-emerald-500/50 pulse-green";
+                }
+                tagEu.innerHTML = '<span class="text-slate-500">BACKUP REGION</span>';
+
+                // Recommendation Banner & Action Button
+                const rec = data.recommendation;
+                const alertCard = document.getElementById('migrationAlertCard');
+                const alertBadge = document.getElementById('alertTypeBadge');
+                const msgEl = document.getElementById('recommendationMessage');
+                const actionContainer = document.getElementById('actionBtnContainer');
+
+                msgEl.innerText = rec.message;
+
+                if (rec.triggered) {
+                    // Spike Alert Triggered
+                    alertCard.className = "mb-6 p-5 rounded-2xl border transition-all duration-300 bg-red-950/30 border-red-500/40 shadow-lg shadow-red-950/30";
+                    alertBadge.className = "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-red-950 text-red-400 border border-red-500/40";
+                    alertBadge.innerText = "URGENT SPIKE ALERT";
+                    document.getElementById('alertIconBox').className = "w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 bg-red-500/20 text-red-400 border border-red-500/40 animate-pulse";
+                    document.getElementById('alertIconBox').innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+
+                    actionContainer.innerHTML = `
+                        <button onclick="executeMigration()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-emerald-500/30 flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5">
+                            <i class="fa-solid fa-rocket"></i><span>Migrate Now (-${rec.carbonSavingsPct}%)</span>
+                        </button>
+                    `;
+                } else {
+                    // Optimal State
+                    alertCard.className = "mb-6 p-5 rounded-2xl border transition-all duration-300 bg-emerald-950/20 border-emerald-500/30 shadow-lg shadow-emerald-950/20";
+                    alertBadge.className = "px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider bg-emerald-950 text-emerald-400 border border-emerald-500/30";
+                    alertBadge.innerText = "GRID OPTIMAL";
+                    document.getElementById('alertIconBox').className = "w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                    document.getElementById('alertIconBox').innerHTML = '<i class="fa-solid fa-leaf"></i>';
+
+                    actionContainer.innerHTML = `
+                        <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-950/80 border border-emerald-500/30">
+                            <i class="fa-solid fa-circle-check"></i> Stockholm Active (0 Carbon Debt)
+                        </span>
+                    `;
+                }
+
+                // Render Logs
+                if (data.logs) {
+                    const logsEl = document.getElementById('orchestratorLogs');
+                    logsEl.innerHTML = data.logs.map(log => `<div>[${new Date().toLocaleTimeString()}] ${log}</div>`).join('');
+                    logsEl.scrollTop = logsEl.scrollHeight;
+                }
+            } catch (err) {
+                console.error("Error fetching orchestrator status:", err);
+            }
+        }
+
+        async function setOrchestratorMode(mode) {
+            try {
+                await fetch('/api/orchestrator/mode', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ mode: mode })
+                });
+                fetchOrchestratorStatus();
+            } catch (err) {
+                console.error("Error setting orchestrator mode:", err);
+            }
+        }
+
+        async function simulateGridSpike() {
+            try {
+                await fetch('/api/orchestrator/simulate-spike', { method: 'POST' });
+                isMigratingUI = false;
+                fetchOrchestratorStatus();
+                updateStatus();
+            } catch (err) {
+                console.error("Error simulating spike:", err);
+            }
+        }
+
+        async function executeMigration() {
+            isMigratingUI = true;
+            const msgEl = document.getElementById('recommendationMessage');
+            const actionContainer = document.getElementById('actionBtnContainer');
+
+            actionContainer.innerHTML = `
+                <div class="px-4 py-2 rounded-xl bg-slate-800 text-xs font-bold text-emerald-400 border border-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-spinner fa-spin"></i><span>Migrating 'Simulation App-01'...</span>
+                </div>
+            `;
+
+            // Step 1
+            msgEl.innerText = "Initiating memory state snapshot & container checkpointing...";
+            document.getElementById('step2').className = "p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 flex items-center gap-2 animate-pulse";
+            await new Promise(r => setTimeout(r, 600));
+
+            // Step 2
+            msgEl.innerText = "Syncing application state with Stockholm EcoDataCenter (SE-SE3)...";
+            document.getElementById('step3').className = "p-2.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 flex items-center gap-2 animate-pulse";
+            await new Promise(r => setTimeout(r, 600));
+
+            // Step 3
+            msgEl.innerText = "Rerouting BGP Anycast DNS & terminating high-carbon instance in North America...";
+            document.getElementById('step4').className = "p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 flex items-center gap-2 animate-pulse";
+            await new Promise(r => setTimeout(r, 600));
+
+            // Execute backend migration
+            try {
+                await fetch('/api/orchestrator/migrate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ targetRegion: 'nordics' })
+                });
+            } catch (e) {
+                console.error(e);
+            }
+
+            isMigratingUI = false;
+            fetchOrchestratorStatus();
+            updateStatus();
         }
 
         async function simulateUsers(delta) {
@@ -136,17 +629,24 @@
             document.getElementById('vmCountDisplay').innerText = data.allocatedVMs;
             let watts = data.totalPowerWatts;
             document.getElementById('powerDisplay').innerText = watts.toFixed(1);
-            document.getElementById('carbonDisplay').innerText = (watts * 0.025 / 1000).toFixed(2) + " kg CO₂ / hr (Nordics Grid)";
+            
+            const carbonKgHr = data.carbonKgHr || (watts * 0.022 / 1000);
+            const regionLabel = data.regionLabel || 'Active Cluster';
+            const intensity = data.gridIntensity || 22;
+            document.getElementById('carbonDisplay').innerText = `${carbonKgHr.toFixed(3)} kg CO₂ / hr (${regionLabel} • ${intensity} g/kWh)`;
+            
             renderGrid(data.instances);
         }
 
-        // Start polling status to update "Initializing" -> "Running"
+        // Start polling intervals
         setInterval(updateStatus, 1500);
+        setInterval(fetchOrchestratorStatus, 2000);
         updateStatus();
+        fetchOrchestratorStatus();
 
         async function fetchInstanceDetails() {
             let outputBox = document.getElementById('inspectorOutput');
-            outputBox.innerHTML = `<p class="text-cyan-400 animate-pulse">Authenticating with Cloud Access Key and fetching live instance metadata...</p>`;
+            outputBox.innerHTML = `<p class="text-cyan-400 animate-pulse"><i class="fa-solid fa-spinner fa-spin mr-2"></i>Authenticating with Cloud Access Key and fetching live instance metadata...</p>`;
             
             try {
                 let res = await fetch('/api/aws/instance-details', {
@@ -157,8 +657,8 @@
                 let data = await res.json();
                 
                 outputBox.innerHTML = `
-                    <p class="text-emerald-400 font-bold text-sm">✔ Cloud Access Key Authenticated Successfully</p>
-                    <div class="grid grid-cols-2 gap-2 mt-3 text-slate-300">
+                    <p class="text-emerald-400 font-bold text-sm flex items-center gap-2"><i class="fa-solid fa-circle-check"></i> Cloud Access Key Authenticated Successfully</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-slate-300">
                         <p>• Instance Type: <span class="text-white font-semibold">${data.instanceType}</span></p>
                         <p>• vCPU Cores: <span class="text-white font-semibold">${data.vcpu} vCPU</span></p>
                         <p>• Memory Allocation: <span class="text-white font-semibold">${data.ramGb} GB RAM</span></p>
