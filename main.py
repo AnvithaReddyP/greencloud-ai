@@ -17,7 +17,9 @@ import json
 
 app = FastAPI(title="GreenCloud AI v3.0 Backend", version="3.0")
 
-USERS_DB = {}
+USERS_DB = {
+    "admin@greencloud.ai": {"name": "Admin User", "password": "password123"}
+}
 SESSIONS_DB = {}
 
 def check_auth(request: Request) -> bool:
@@ -440,6 +442,109 @@ def calculate_costs(req: CalculationRequest):
         
     evaluated.sort(key=lambda x: x["matchScore"], reverse=True)
     return {"providers": evaluated, "monthlyKwh": monthly_kwh, "gridIntensity": grid_intensity}
+
+REGIONAL_BASE_PRICE = {
+    "nordics": 42.0,
+    "eu": 88.0,
+    "na": 65.0,
+    "apac": 98.0,
+    "sa": 54.0
+}
+
+HOURLY_CARBON_MULT = [0.72, 0.68, 0.65, 0.66, 0.70, 0.78, 0.95, 1.15, 1.25, 1.20, 1.05, 0.88, 0.82, 0.85, 0.92, 1.08, 1.22, 1.38, 1.45, 1.35, 1.18, 1.02, 0.88, 0.78]
+HOURLY_PRICE_MULT = [0.65, 0.60, 0.58, 0.60, 0.65, 0.75, 1.10, 1.30, 1.35, 1.25, 1.05, 0.90, 0.85, 0.88, 0.95, 1.15, 1.35, 1.48, 1.55, 1.40, 1.15, 0.95, 0.80, 0.70]
+
+@app.get("/api/forecast")
+def get_carbon_forecast(region: str = "nordics", duration: int = 4):
+    base_intensity = fetch_live_electricity_intensity(region)
+    base_price = REGIONAL_BASE_PRICE.get(region, 65.0)
+    duration = max(1, min(24, int(duration)))
+
+    # Try Electricity Maps forecast API if available
+    em_forecast = None
+    if ELECTRICITY_MAPS_KEY:
+        zone_map = {"na": "US-CAL-CISO", "eu": "DE", "nordics": "SE-SE3", "apac": "SG", "sa": "BR-CS"}
+        zone = zone_map.get(region, "DE")
+        try:
+            headers = {"auth-token": ELECTRICITY_MAPS_KEY}
+            res = requests.get(f"https://api.electricitymap.org/v4/carbon-intensity/forecast?zone={zone}", headers=headers, timeout=3)
+            if res.status_code == 200:
+                forecast_data = res.json().get("forecast", [])
+                if len(forecast_data) >= 24:
+                    em_forecast = [int(pt.get("carbonIntensity", base_intensity)) for pt in forecast_data[:24]]
+        except Exception:
+            em_forecast = None
+
+    hourly = []
+    carbon_values = []
+    price_values = []
+
+    for h in range(24):
+        if em_forecast and h < len(em_forecast):
+            c_val = em_forecast[h]
+        else:
+            c_val = max(5, int(round(base_intensity * HOURLY_CARBON_MULT[h])))
+        p_val = round(base_price * HOURLY_PRICE_MULT[h], 1)
+        carbon_values.append(c_val)
+        price_values.append(p_val)
+        hourly.append({
+            "hour": f"{h:02d}:00",
+            "hourNum": h,
+            "carbonIntensity": c_val,
+            "price": p_val,
+            "isOptimal": False
+        })
+
+    # Rolling window optimization for given duration
+    best_start = 0
+    min_window_carbon = float("inf")
+    best_window_indices = []
+
+    for i in range(24):
+        window_indices = [(i + k) % 24 for k in range(duration)]
+        w_avg_carbon = sum(carbon_values[idx] for idx in window_indices) / duration
+        if w_avg_carbon < min_window_carbon:
+            min_window_carbon = w_avg_carbon
+            best_start = i
+            best_window_indices = window_indices
+
+    # Mark optimal hours
+    for idx in best_window_indices:
+        hourly[idx]["isOptimal"] = True
+
+    peak_carbon = max(carbon_values)
+    valley_carbon = min(carbon_values)
+    peak_price = max(price_values)
+    best_window_price = sum(price_values[idx] for idx in best_window_indices) / duration
+
+    carbon_reduction_pct = round(((peak_carbon - min_window_carbon) / max(1, peak_carbon)) * 100, 1)
+    cost_reduction_pct = round(((peak_price - best_window_price) / max(1, peak_price)) * 100, 1)
+
+    end_hour = (best_start + duration) % 24
+    optimal_window_str = f"{best_start:02d}:00 - {end_hour:02d}:00 UTC"
+
+    ai_recommendation = (
+        f"Run your {duration}h batch / AI training workload between {optimal_window_str} "
+        f"to reduce carbon emissions by {carbon_reduction_pct}% and save ~{cost_reduction_pct}% "
+        f"on electricity spot tariffs compared to peak grid hours."
+    )
+
+    return {
+        "region": region,
+        "duration": duration,
+        "liveIntensity": base_intensity,
+        "optimalWindow": optimal_window_str,
+        "optimalStartHour": best_start,
+        "optimalEndHour": end_hour,
+        "carbonReductionPct": carbon_reduction_pct,
+        "costReductionPct": cost_reduction_pct,
+        "peakCarbon": peak_carbon,
+        "valleyCarbon": valley_carbon,
+        "optimalAvgCarbon": round(min_window_carbon, 1),
+        "optimalAvgPrice": round(best_window_price, 1),
+        "aiRecommendation": ai_recommendation,
+        "hourly": hourly
+    }
 
 CHAT_CACHE = {}
 

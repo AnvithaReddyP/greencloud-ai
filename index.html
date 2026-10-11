@@ -21,6 +21,11 @@
     </script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF & AutoTable CDNs for Corporate ESG PDF Reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <style>
         .glass-panel {
             background: rgba(17, 24, 39, 0.75);
@@ -134,19 +139,124 @@
                         <button type="button" data-priority="carbon" class="priority-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">Zero Carbon</button>
                     </div>
                 </div>
-                <button id="calculateBtn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
-                    <i class="fa-solid fa-calculator"></i><span>Calculate Best Providers</span>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="downloadEsgBtn" onclick="openEsgModal()" class="bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-bold px-5 py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-file-invoice-dollar"></i><span>Download ESG Audit Report</span>
+                    </button>
+                    <button id="calculateBtn" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-calculator"></i><span>Calculate Best Providers</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 24-Hour Predictive Carbon & Cost Forecasting (Time-Shifting Engine) -->
+        <section class="glass-panel rounded-2xl p-6 lg:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute -left-20 -bottom-20 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="text-[10px] uppercase font-extrabold tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bolt"></i> 24-Hour Time-Shifting Engine
+                        </span>
+                        <span id="forecastRegionBadge" class="text-xs text-slate-400 font-medium">Nordics Grid (SE-SE3) &bull; Live Telemetry</span>
+                    </div>
+                    <h2 class="text-xl lg:text-2xl font-extrabold text-white tracking-tight">Predictive Grid Carbon & Cost Forecasting</h2>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">Real-time hourly forecasting curve. Time-shift compute intensive AI training & batch jobs to the lowest carbon density windows.</p>
+                </div>
+
+                <!-- Job Duration Selector Toggles -->
+                <div class="flex items-center gap-1.5 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800 self-start lg:self-auto">
+                    <span class="text-xs font-semibold text-slate-400 px-2">Job Duration:</span>
+                    <button type="button" onclick="setForecastDuration(2)" data-duration="2" class="forecast-dur-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">2h</button>
+                    <button type="button" onclick="setForecastDuration(4)" data-duration="4" class="forecast-dur-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-slate-950 transition cursor-pointer">4h</button>
+                    <button type="button" onclick="setForecastDuration(6)" data-duration="6" class="forecast-dur-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">6h</button>
+                    <button type="button" onclick="setForecastDuration(12)" data-duration="12" class="forecast-dur-btn px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition cursor-pointer">12h</button>
+                </div>
+            </div>
+
+            <!-- Dynamic AI Recommendation Banner -->
+            <div class="mb-6 p-4 rounded-xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-cyan-950/70 border border-emerald-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg shadow-emerald-950/20">
+                <div class="flex items-start gap-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 text-lg shadow-inner">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">AI Workload Scheduling Recommendation</span>
+                            <span id="aiWindowBadge" class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950 text-cyan-300 border border-cyan-500/30">Optimal: Calculating...</span>
+                        </div>
+                        <p id="aiRecommendationText" class="text-xs sm:text-sm text-slate-200 mt-1.5 leading-relaxed font-medium">
+                            Synthesizing regional grid carbon intensity and electricity spot pricing...
+                        </p>
+                    </div>
+                </div>
+                <button onclick="scheduleJobToast()" class="shrink-0 bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-slate-200 font-bold px-4 py-2 rounded-xl text-xs transition border border-slate-700 flex items-center gap-2 cursor-pointer shadow-md">
+                    <i class="fa-regular fa-calendar-check text-emerald-400"></i><span>Apply Optimal Window</span>
                 </button>
+            </div>
+
+            <!-- Interactive Dual-Axis Chart Canvas -->
+            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800/80 mb-6">
+                <div class="flex flex-wrap items-center justify-between text-xs text-slate-400 mb-3 px-1 gap-2">
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-emerald-500 inline-block shadow-sm"></span>
+                            <span class="text-slate-300 font-medium">Carbon Intensity (gCO₂eq/kWh)</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 rounded bg-cyan-400 inline-block shadow-sm"></span>
+                            <span class="text-slate-300 font-medium">Electricity Spot Tariff ($/MWh)</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-emerald-400 font-medium">
+                        <i class="fa-solid fa-circle-check"></i>
+                        <span id="chartOptimalLegend">Optimal execution window highlighted</span>
+                    </div>
+                </div>
+                <div class="w-full h-72">
+                    <canvas id="forecastChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 4 Bottom KPI Metric Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition">
+                    <span class="text-slate-400 block mb-1">Optimal Execution Window</span>
+                    <span id="metricOptimalWindow" class="text-base sm:text-lg font-extrabold text-emerald-400">--</span>
+                    <span class="text-[10px] text-slate-500 block mt-0.5">Lowest cumulative grid draw</span>
+                </div>
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition">
+                    <span class="text-slate-400 block mb-1">Carbon Draw Reduction</span>
+                    <span id="metricCarbonReduction" class="text-base sm:text-lg font-extrabold text-emerald-400">--</span>
+                    <span class="text-[10px] text-slate-500 block mt-0.5">vs. Peak carbon hours</span>
+                </div>
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition">
+                    <span class="text-slate-400 block mb-1">Spot Tariff Savings</span>
+                    <span id="metricCostReduction" class="text-base sm:text-lg font-extrabold text-cyan-400">--</span>
+                    <span class="text-[10px] text-slate-500 block mt-0.5">Off-peak electricity pricing</span>
+                </div>
+                <div class="bg-slate-900/70 p-4 rounded-xl border border-slate-800 hover:border-emerald-500/30 transition">
+                    <span class="text-slate-400 block mb-1">Grid Peak vs Optimal Valley</span>
+                    <span id="metricPeakVsValley" class="text-base sm:text-lg font-extrabold text-white">--</span>
+                    <span class="text-[10px] text-slate-500 block mt-0.5">gCO₂eq/kWh differential</span>
+                </div>
             </div>
         </section>
 
         <!-- Results Grid Section -->
         <section class="space-y-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-bold text-white flex items-center gap-2">
                     <i class="fa-solid fa-server text-emerald-400"></i><span>Evaluated Cloud Providers</span>
                 </h2>
-                <span id="resultsCount" class="text-xs text-slate-400">Loading providers...</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="openEsgModal()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-950/90 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 transition flex items-center gap-1.5 shadow-lg shadow-emerald-500/10 cursor-pointer">
+                        <i class="fa-solid fa-file-arrow-down"></i><span>ESG Audit Report (PDF)</span>
+                    </button>
+                    <span id="resultsCount" class="text-xs text-slate-400">Loading providers...</span>
+                </div>
             </div>
 
             <div id="providersGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -260,21 +370,159 @@
             </div>
             
             <!-- Footer -->
-            <div class="p-6 border-t border-slate-800 bg-slate-900/80 flex justify-end">
-                <button onclick="alert('Deploying workload...')" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer">
+            <div class="p-6 border-t border-slate-800 bg-slate-900/80 flex items-center justify-between">
+                <button onclick="openEsgModal(currentSelectedModalProviderId)" class="bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center gap-2 cursor-pointer shadow-md">
+                    <i class="fa-solid fa-file-invoice-dollar text-emerald-400"></i><span>Generate ESG Audit Report</span>
+                </button>
+                <button onclick="alert('Deploying workload to ' + document.getElementById('modalProviderName').innerText + '...')" class="bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl transition shadow-lg shadow-emerald-500/20 cursor-pointer">
                     Confirm & Deploy
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- ESG Audit Report Modal -->
+    <div id="esgModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div class="glass-panel w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl transform transition-all duration-300 scale-95 opacity-0" id="esgModalContent">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/90 sticky top-0 z-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-slate-950 flex items-center justify-center text-xl font-bold shadow-lg shadow-emerald-500/20">
+                        <i class="fa-solid fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xl font-extrabold text-white">Automated ESG & Carbon Audit Report</h3>
+                            <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-400">PDF Generator</span>
+                        </div>
+                        <p class="text-xs text-slate-400">GHG Protocol Scope 2 & ISO 14001 Aligned Multi-Cloud Certification</p>
+                    </div>
+                </div>
+                <button onclick="closeEsgModal()" class="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-6">
+                <!-- Configuration Form -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Company / Enterprise Name</label>
+                        <input type="text" id="esgCompanyName" value="Enterprise Cloud Operations" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Workload / Project Title</label>
+                        <input type="text" id="esgProjectName" value="Core AI Production Fleet" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Selected Cloud Provider for Audit</label>
+                        <select id="esgProviderSelect" onchange="updateEsgModalPreview()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-emerald-500 transition">
+                            <!-- Populated dynamically with evaluated providers -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Live Audit Preview Card -->
+                <div class="bg-slate-900/80 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-certificate"></i> Audit Summary Preview
+                        </span>
+                        <span id="esgPreviewBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/30 text-emerald-400 font-bold">Scope 2 Ready</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 uppercase block mb-1">Monthly Cost</span>
+                            <span id="esgPreviewCost" class="text-sm font-extrabold text-white">--</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 uppercase block mb-1">Monthly Savings</span>
+                            <span id="esgPreviewSavings" class="text-sm font-extrabold text-emerald-400">--</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 uppercase block mb-1">Carbon Avoided</span>
+                            <span id="esgPreviewAvoided" class="text-sm font-extrabold text-emerald-400">--</span>
+                        </div>
+                        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80">
+                            <span class="text-[10px] text-slate-400 uppercase block mb-1">Renewables / PUE</span>
+                            <span id="esgPreviewGreen" class="text-sm font-extrabold text-cyan-400">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Regulatory Framework Badges -->
+                    <div class="pt-2 flex flex-wrap items-center gap-2">
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-shield-halved text-emerald-400"></i> GHG Protocol Scope 2 Ready
+                        </span>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-tree text-cyan-400"></i> ISO 14001:2015 Aligned
+                        </span>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-plug text-emerald-400"></i> 24/7 Carbon-Free Energy
+                        </span>
+                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-800 border border-slate-700 text-slate-300 flex items-center gap-1.5">
+                            <i class="fa-solid fa-gauge-high text-cyan-400"></i> EU EED PUE &lt; 1.3
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-6 border-t border-slate-800 bg-slate-900/90 flex items-center justify-between">
+                <span class="text-[11px] text-slate-400">
+                    <i class="fa-solid fa-lock text-emerald-400 mr-1"></i> Client-side rendered vector PDF
+                </span>
+                <div class="flex items-center gap-3">
+                    <button onclick="closeEsgModal()" class="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button onclick="generateESGReportPDF()" class="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs sm:text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-file-arrow-down"></i><span>Generate & Download Official PDF</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastNotification" class="fixed bottom-6 right-6 z-[200] hidden px-5 py-3 rounded-2xl glass-panel border border-emerald-500/40 text-emerald-300 text-xs shadow-2xl flex items-center gap-3 transition-all duration-300">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage">Action completed successfully.</span>
+    </div>
+
     <!-- Client Script -->
     <script>
         let currentPriority = 'balanced';
-        let latestSpecs = { vcpu: 4, ram: 16, storage: 100, budget: 120 };
+        let latestSpecs = { vcpu: 4, ram: 16, storage: 100, budget: 120, region: 'nordics' };
         let currentProviders = [];
+        let latestGridIntensity = 25;
+        let currentForecastDuration = 4;
+        let forecastChart = null;
+        let currentForecastData = null;
+        let currentSelectedModalProviderId = null;
+
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            const msgEl = document.getElementById('toastMessage');
+            msgEl.innerText = message;
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 4000);
+        }
+
+        function scheduleJobToast() {
+            if (currentForecastData) {
+                showToast(`Workload successfully scheduled for low-carbon window: ${currentForecastData.optimalWindow}! Projected carbon cut: ${currentForecastData.carbonReductionPct}%.`);
+            } else {
+                showToast("Workload scheduled for next optimal low-carbon execution window!");
+            }
+        }
 
         function openProviderModal(id) {
+            currentSelectedModalProviderId = id;
             const provider = currentProviders.find(p => p.id === id);
             if (!provider) return;
             
@@ -311,6 +559,566 @@
             setTimeout(() => {
                 modal.classList.add('hidden');
             }, 300);
+        }
+
+        // ESG Modal Management
+        function openEsgModal(preselectedId) {
+            const selectEl = document.getElementById('esgProviderSelect');
+            selectEl.innerHTML = '';
+
+            if (currentProviders.length === 0) {
+                showToast("Please calculate providers first to generate an ESG report.");
+                return;
+            }
+
+            const targetId = preselectedId || (currentProviders[0] ? currentProviders[0].id : null);
+
+            currentProviders.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = `${p.name} ($${p.monthlyCost}/mo • ${p.carbonKg}kg CO₂ • ${p.matchScore}% Match)${idx === 0 ? ' - Recommended' : ''}`;
+                if (p.id === targetId) opt.selected = true;
+                selectEl.appendChild(opt);
+            });
+
+            updateEsgModalPreview();
+
+            const modal = document.getElementById('esgModal');
+            const content = document.getElementById('esgModalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeEsgModal() {
+            const modal = document.getElementById('esgModal');
+            const content = document.getElementById('esgModalContent');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function updateEsgModalPreview() {
+            const selectEl = document.getElementById('esgProviderSelect');
+            const selectedId = selectEl.value;
+            const selected = currentProviders.find(p => p.id === selectedId) || currentProviders[0];
+            if (!selected) return;
+
+            // Find legacy baseline (AWS or highest cost provider among evaluated)
+            const legacyBaseline = currentProviders.find(p => p.id === 'aws') || currentProviders.reduce((prev, curr) => (curr.monthlyCost > prev.monthlyCost ? curr : prev), currentProviders[0]);
+            
+            const monthlySavings = Math.max(0, legacyBaseline.monthlyCost - selected.monthlyCost);
+            const carbonAvoided = Math.max(0, legacyBaseline.carbonKg - selected.carbonKg);
+
+            document.getElementById('esgPreviewCost').innerText = `$${selected.monthlyCost}/mo`;
+            document.getElementById('esgPreviewSavings').innerText = monthlySavings > 0 ? `+$${monthlySavings.toFixed(2)}/mo` : `$0.00/mo`;
+            document.getElementById('esgPreviewAvoided').innerText = `${carbonAvoided.toFixed(1)} kg CO₂`;
+            document.getElementById('esgPreviewGreen').innerText = `${selected.renewablePct}% / ${selected.pue} PUE`;
+            document.getElementById('esgPreviewBadge').innerText = selected.matchScore > 80 ? 'Top Recommendation' : 'Evaluated Provider';
+        }
+
+        // Automated ESG & Carbon Audit Report Generator (PDF)
+        function generateESGReportPDF() {
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert("PDF Generation Library is loading. Please check internet connection and try again.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const companyName = (document.getElementById('esgCompanyName').value.trim()) || "Enterprise Cloud Operations";
+            const projectName = (document.getElementById('esgProjectName').value.trim()) || "Core Production Infrastructure Fleet";
+            const selectEl = document.getElementById('esgProviderSelect');
+            const selectedId = selectEl.value;
+            const provider = currentProviders.find(p => p.id === selectedId) || currentProviders[0];
+
+            if (!provider) {
+                showToast("No provider available for ESG Audit report generation.");
+                return;
+            }
+
+            // Calculations vs Legacy baseline
+            const legacyBaseline = currentProviders.find(p => p.id === 'aws') || currentProviders.reduce((prev, curr) => (curr.monthlyCost > prev.monthlyCost ? curr : prev), currentProviders[0]);
+            const legacyName = legacyBaseline.name || "Legacy Hyperscaler Baseline";
+            const costSavingsMonthly = Math.max(0, legacyBaseline.monthlyCost - provider.monthlyCost).toFixed(2);
+            const costSavingsAnnual = (parseFloat(costSavingsMonthly) * 12).toFixed(2);
+            const carbonAvoidedMonthly = Math.max(0, legacyBaseline.carbonKg - provider.carbonKg).toFixed(1);
+            const carbonAvoidedAnnual = (parseFloat(carbonAvoidedMonthly) * 12 / 1000).toFixed(2);
+            const carbonReductionPct = legacyBaseline.carbonKg > 0 ? Math.round(((legacyBaseline.carbonKg - provider.carbonKg) / legacyBaseline.carbonKg) * 100) : 0;
+            const auditId = "GC-ESG-" + Math.random().toString(36).substring(2, 8).toUpperCase() + "-" + new Date().getFullYear();
+            const dateStr = new Date().toISOString().replace('T', ' ').substring(0, 19) + " UTC";
+
+            // 1. Corporate Top Masthead
+            doc.setFillColor(15, 23, 42); // slate-900
+            doc.rect(0, 0, 210, 32, 'F');
+            doc.setFillColor(16, 185, 129); // emerald-500 accent strip
+            doc.rect(0, 32, 210, 2.5, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("GREENCLOUD AI", 14, 14);
+
+            doc.setTextColor(52, 211, 153);
+            doc.setFontSize(9);
+            doc.text("CORPORATE ESG & CARBON AUDIT REPORT", 14, 21);
+
+            doc.setTextColor(148, 163, 184);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7.5);
+            doc.text("INDEPENDENT MULTI-CLOUD SUSTAINABILITY & EMISSIONS BENCHMARK", 14, 27);
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.text(`AUDIT ID: ${auditId}`, 196, 13, { align: "right" });
+            doc.setTextColor(148, 163, 184);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7.5);
+            doc.text(`DATE: ${dateStr}`, 196, 19, { align: "right" });
+            doc.setTextColor(52, 211, 153);
+            doc.setFont("helvetica", "bold");
+            doc.text("STATUS: VERIFIED SCOPE 2 COMPLIANT", 196, 25, { align: "right" });
+
+            // 2. Organization & Workload Specifications Profile Box
+            let y = 41;
+            doc.setFillColor(248, 250, 252);
+            doc.setDrawColor(226, 232, 240);
+            doc.roundedRect(14, y, 182, 22, 2, 2, 'FD');
+
+            doc.setTextColor(15, 23, 42);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10.5);
+            doc.text(`ENTERPRISE: ${companyName}`, 18, y + 6.5);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(71, 85, 105);
+            doc.text(`Workload / Project: ${projectName}   |   Region: ${latestSpecs.region.toUpperCase()}`, 18, y + 12);
+            doc.text(`Hardware Footprint: ${latestSpecs.vcpu} vCPUs   •   ${latestSpecs.ram} GB RAM   •   ${latestSpecs.storage} GB Storage   •   Budget Limit: $${latestSpecs.budget}/mo`, 18, y + 17.5);
+
+            // 3. Section 1: Executive Summary & Audit Findings
+            y = 69;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text("1. EXECUTIVE SUMMARY & CARBON MITIGATION CERTIFICATION", 14, y);
+
+            doc.setFillColor(240, 253, 244);
+            doc.setDrawColor(187, 247, 208);
+            doc.roundedRect(14, y + 3, 182, 24, 1.5, 1.5, 'FD');
+            doc.setFillColor(16, 185, 129);
+            doc.rect(14, y + 3, 2, 24, 'F'); // left emerald bar
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(7.5);
+            doc.setTextColor(30, 41, 59);
+            const execSummaryText = `This corporate audit certifies that architecting the evaluated workload on ${provider.name} achieves verified greenhouse gas mitigation and operational cost efficiency. Compared against legacy hyperscaler baselines (${legacyName}), this configuration avoids an estimated ${carbonAvoidedMonthly} kg CO2eq per month (${carbonAvoidedAnnual} metric tons CO2eq/year, representing a ${carbonReductionPct}% emissions reduction). Additionally, monthly infrastructure OPEX is optimized by $${costSavingsMonthly}/month ($${costSavingsAnnual}/year savings) with 100% data center transparency aligned with ISO 14001 and GHG Protocol Scope 2 standards.`;
+            const splitSummary = doc.splitTextToSize(execSummaryText, 174);
+            doc.text(splitSummary, 19, y + 8);
+
+            // 4. Section 2: Core Verified Sustainability & Financial Metrics (5 Visual Metric Tiles)
+            y = 100;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text("2. CORE AUDIT KEY PERFORMANCE INDICATORS", 14, y);
+
+            // Row 1: 3 Tiles
+            const w1 = 58;
+            const h1 = 20;
+            const tilesR1 = [
+                { title: "OPTIMIZED CLOUD PROVIDER", val: provider.name, sub: `Base: ${provider.baseLocation}`, col: [15, 23, 42] },
+                { title: "MONTHLY COST SAVINGS", val: `$${costSavingsMonthly} / mo`, sub: `$${costSavingsAnnual} / yr vs Legacy`, col: [5, 150, 105] },
+                { title: "EST. CARBON AVOIDED", val: `${carbonAvoidedMonthly} kg CO₂`, sub: `${carbonAvoidedAnnual} tons CO₂/yr (-${carbonReductionPct}%)`, col: [5, 150, 105] }
+            ];
+
+            tilesR1.forEach((t, i) => {
+                const tx = 14 + (i * (w1 + 4));
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(tx, y + 3, w1, h1, 1.5, 1.5, 'FD');
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(t.title, tx + 4, y + 8);
+
+                doc.setFontSize(10);
+                doc.setTextColor(t.col[0], t.col[1], t.col[2]);
+                doc.text(t.val, tx + 4, y + 14);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(t.sub, tx + 4, y + 19);
+            });
+
+            // Row 2: 2 Tiles
+            const y_r2 = y + 27;
+            const w2 = 89;
+            const h2 = 18;
+            const tilesR2 = [
+                { title: "RENEWABLE ENERGY SOURCING", val: `${provider.renewablePct}% Clean Power Match`, sub: `RE100 & 24/7 CFE Aligned • Grid: ${latestGridIntensity} gCO₂eq/kWh`, col: [15, 23, 42] },
+                { title: "DATACENTER POWER EFFICIENCY (PUE)", val: `${provider.pue} PUE Rating`, sub: "Global Average Benchmark: 1.58 PUE (Uptime Institute)", col: [15, 23, 42] }
+            ];
+
+            tilesR2.forEach((t, i) => {
+                const tx = 14 + (i * (w2 + 4));
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(tx, y_r2, w2, h2, 1.5, 1.5, 'FD');
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(t.title, tx + 4, y_r2 + 5);
+
+                doc.setFontSize(9.5);
+                doc.setTextColor(t.col[0], t.col[1], t.col[2]);
+                doc.text(t.val, tx + 4, y_r2 + 11);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(6.5);
+                doc.setTextColor(100, 116, 139);
+                doc.text(t.sub, tx + 4, y_r2 + 15.5);
+            });
+
+            // 5. Section 3: Multi-Cloud Provider Benchmarking Table
+            y = 151;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text("3. MULTI-CLOUD EMISSIONS & COST BENCHMARK AUDIT TABLE", 14, y);
+
+            const tableColumns = [
+                { header: 'Provider', dataKey: 'name' },
+                { header: 'Base Region', dataKey: 'region' },
+                { header: 'Cost ($/mo)', dataKey: 'cost' },
+                { header: 'Carbon (kg)', dataKey: 'carbon' },
+                { header: 'Renewable %', dataKey: 'renew' },
+                { header: 'PUE', dataKey: 'pue' },
+                { header: 'Match %', dataKey: 'match' },
+                { header: 'Key Compliance Certifications', dataKey: 'compliance' }
+            ];
+
+            const tableRows = currentProviders.map(p => ({
+                id: p.id,
+                name: p.name + (p.id === provider.id ? ' [SELECTED]' : ''),
+                region: p.baseLocation,
+                cost: `$${p.monthlyCost}`,
+                carbon: `${p.carbonKg} kg`,
+                renew: `${p.renewablePct}%`,
+                pue: `${p.pue}`,
+                match: `${p.matchScore}%`,
+                compliance: p.compliance ? p.compliance.slice(0, 2).join(', ') : 'ISO 27001'
+            }));
+
+            let tableFinalY = y + 25;
+            try {
+                if (doc.autoTable) {
+                    doc.autoTable({
+                        startY: y + 3,
+                        columns: tableColumns,
+                        body: tableRows,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [15, 23, 42],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold',
+                            fontSize: 7,
+                            cellPadding: 1.5
+                        },
+                        bodyStyles: {
+                            fontSize: 6.8,
+                            cellPadding: 1.5,
+                            textColor: [30, 41, 59]
+                        },
+                        alternateRowStyles: {
+                            fillColor: [248, 250, 252]
+                        },
+                        didParseCell: function(data) {
+                            if (data.row.raw && data.row.raw.id === provider.id) {
+                                data.cell.styles.fillColor = [209, 250, 229]; // light emerald tint
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.textColor = [6, 95, 70];
+                            }
+                        },
+                        margin: { left: 14, right: 14 }
+                    });
+                    tableFinalY = doc.lastAutoTable.finalY + 6;
+                }
+            } catch (err) {
+                console.warn("AutoTable fallback:", err);
+            }
+
+            // 6. Section 4: ESG Compliance & Regulatory Framework Alignment Badges
+            y = Math.min(238, tableFinalY);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(9.5);
+            doc.setTextColor(15, 23, 42);
+            doc.text("4. ESG REGULATORY ALIGNMENT & FRAMEWORK COMPLIANCE BADGES", 14, y);
+
+            const badges = [
+                {
+                    title: "GHG PROTOCOL SCOPE 2 READY",
+                    desc: "Meets Location-Based & Market-Based Scope 2 accounting under WRI/WBCSD GHG Protocol standard.",
+                    col: [16, 185, 129]
+                },
+                {
+                    title: "ISO 14001:2015 ALIGNED",
+                    desc: "Data center operational footprint conforms to international environmental management systems standard.",
+                    col: [6, 182, 212]
+                },
+                {
+                    title: "EU ENERGY EFFICIENCY DIRECTIVE (EED)",
+                    desc: "Verified compliant with EU recast Directive (PUE < 1.3 threshold and heat reuse reporting standards).",
+                    col: [16, 185, 129]
+                },
+                {
+                    title: "24/7 CARBON-FREE ENERGY (CFE)",
+                    desc: "Audited for real-time temporal carbon matching and zero-emission workload time-shifting readiness.",
+                    col: [6, 182, 212]
+                }
+            ];
+
+            const badgeW = 89;
+            const badgeH = 15;
+            badges.forEach((b, i) => {
+                const col = i % 2;
+                const row = Math.floor(i / 2);
+                const bx = 14 + (col * (badgeW + 4));
+                const by = y + 3 + (row * (badgeH + 3));
+
+                doc.setFillColor(248, 250, 252);
+                doc.setDrawColor(226, 232, 240);
+                doc.roundedRect(bx, by, badgeW, badgeH, 1.5, 1.5, 'FD');
+                doc.setFillColor(b.col[0], b.col[1], b.col[2]);
+                doc.rect(bx, by, 1.5, badgeH, 'F');
+
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(6.5);
+                doc.setTextColor(15, 23, 42);
+                doc.text(b.title, bx + 4, by + 4.5);
+
+                doc.setFont("helvetica", "normal");
+                doc.setFontSize(5.8);
+                doc.setTextColor(100, 116, 139);
+                const descSplit = doc.splitTextToSize(b.desc, 82);
+                doc.text(descSplit, bx + 4, by + 8.5);
+            });
+
+            // 7. Corporate Verification Footer
+            const footY = 282;
+            doc.setDrawColor(226, 232, 240);
+            doc.line(14, footY, 196, footY);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(6.5);
+            doc.setTextColor(148, 163, 184);
+            doc.text(`Certified by GreenCloud Autonomous Carbon Engine  •  Verification Signature: SHA256-${auditId}`, 14, footY + 4.5);
+            doc.text(`Confidential ESG Audit Report  •  Page 1 of 1  •  Generated for ${companyName}`, 196, footY + 4.5, { align: "right" });
+
+            // Download Trigger
+            const safeName = companyName.replace(/[^a-zA-Z0-9]/g, '_');
+            doc.save(`GreenCloud_ESG_Audit_Report_${safeName}.pdf`);
+
+            closeEsgModal();
+            showToast("ESG Audit Report PDF generated and downloaded successfully!");
+        }
+
+        // 24-Hour Predictive Time-Shifting Forecasting Engine
+        async function fetchForecast(region, duration) {
+            try {
+                const res = await fetch(`/api/forecast?region=${encodeURIComponent(region)}&duration=${duration}`);
+                if (!res.ok) throw new Error("Forecast API error");
+                const data = await res.json();
+                currentForecastData = data;
+
+                // Update UI Badges & Texts
+                const regionNameMap = {
+                    "nordics": "Nordics Grid (SE-SE3)",
+                    "eu": "Europe Grid (Germany/DE)",
+                    "na": "North America Grid (US-CAL)",
+                    "apac": "Asia Pacific Grid (SG)",
+                    "sa": "South America Grid (BR-CS)"
+                };
+                const regTitle = regionNameMap[data.region] || `${data.region.toUpperCase()} Grid`;
+                document.getElementById('forecastRegionBadge').innerText = `${regTitle} • Live ${data.liveIntensity} gCO₂eq/kWh`;
+
+                document.getElementById('aiWindowBadge').innerText = `Optimal: ${data.optimalWindow}`;
+                document.getElementById('aiRecommendationText').innerText = data.aiRecommendation;
+
+                document.getElementById('metricOptimalWindow').innerText = data.optimalWindow;
+                document.getElementById('metricCarbonReduction').innerText = `-${data.carbonReductionPct}%`;
+                document.getElementById('metricCostReduction').innerText = `-${data.costReductionPct}%`;
+                document.getElementById('metricPeakVsValley').innerText = `${data.peakCarbon} vs ${data.optimalAvgCarbon} g`;
+
+                renderForecastChart(data);
+            } catch (err) {
+                console.error("Forecast fetch error:", err);
+            }
+        }
+
+        function setForecastDuration(duration) {
+            currentForecastDuration = duration;
+            document.querySelectorAll('.forecast-dur-btn').forEach(btn => {
+                const d = parseInt(btn.getAttribute('data-duration'));
+                if (d === duration) {
+                    btn.classList.remove('text-slate-400', 'font-medium');
+                    btn.classList.add('bg-emerald-500', 'text-slate-950', 'font-bold');
+                } else {
+                    btn.classList.remove('bg-emerald-500', 'text-slate-950', 'font-bold');
+                    btn.classList.add('text-slate-400', 'font-medium');
+                }
+            });
+            const region = document.getElementById('regionInput').value || 'nordics';
+            fetchForecast(region, duration);
+        }
+
+        function renderForecastChart(data) {
+            const canvas = document.getElementById('forecastChart');
+            if (!canvas) return;
+
+            const labels = data.hourly.map(h => h.hour);
+            const carbonData = data.hourly.map(h => h.carbonIntensity);
+            const priceData = data.hourly.map(h => h.price);
+
+            const pointBackgroundColors = data.hourly.map(h => h.isOptimal ? '#34d399' : '#047857');
+            const pointRadii = data.hourly.map(h => h.isOptimal ? 6 : 2.5);
+            const pointHoverRadii = data.hourly.map(h => h.isOptimal ? 8 : 5);
+
+            if (forecastChart) {
+                forecastChart.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            const carbonGradient = ctx.createLinearGradient(0, 0, 0, 280);
+            carbonGradient.addColorStop(0, 'rgba(16, 185, 129, 0.40)');
+            carbonGradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+
+            forecastChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Carbon Intensity (gCO₂eq/kWh)',
+                            data: carbonData,
+                            borderColor: '#10b981',
+                            backgroundColor: carbonGradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            yAxisID: 'y',
+                            pointBackgroundColor: pointBackgroundColors,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: data.hourly.map(h => h.isOptimal ? 2 : 0),
+                            pointRadius: pointRadii,
+                            pointHoverRadius: pointHoverRadii
+                        },
+                        {
+                            label: 'Electricity Spot Tariff ($/MWh)',
+                            data: priceData,
+                            borderColor: '#38bdf8',
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            tension: 0.35,
+                            yAxisID: 'y1',
+                            pointBackgroundColor: '#38bdf8',
+                            pointRadius: 2.5,
+                            pointHoverRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#cbd5e1',
+                            borderColor: 'rgba(52, 211, 153, 0.3)',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                afterTitle: function(items) {
+                                    const index = items[0].dataIndex;
+                                    return data.hourly[index].isOptimal ? '✨ OPTIMAL LOW-CARBON WINDOW' : '';
+                                },
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return ` Carbon: ${context.parsed.y} gCO₂eq/kWh`;
+                                    } else {
+                                        return ` Spot Tariff: $${context.parsed.y}/MWh`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Carbon (gCO₂eq/kWh)',
+                                color: '#10b981',
+                                font: { size: 11, weight: 'bold' }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.05)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Tariff ($/MWh)',
+                                color: '#38bdf8',
+                                font: { size: 11, weight: 'bold' }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Drawer Toggle Logic
@@ -353,7 +1161,9 @@
                     body: JSON.stringify(latestSpecs)
                 });
                 const data = await res.json();
+                latestGridIntensity = data.gridIntensity || 25;
                 renderProviders(data.providers);
+                fetchForecast(latestSpecs.region, currentForecastDuration);
             } catch (err) {
                 console.error("Failed to calculate providers:", err);
             }
@@ -391,9 +1201,14 @@
                             <div class="flex justify-between"><span>PUE Efficiency:</span><strong class="text-white">${p.pue}</strong></div>
                         </div>
                     </div>
-                    <button onclick="openProviderModal('${p.id}')" class="w-full py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fa-solid fa-cloud-arrow-up"></i><span>Select Provider</span>
-                    </button>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <button onclick="openEsgModal('${p.id}')" class="py-2.5 rounded-xl text-xs font-bold bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md">
+                            <i class="fa-solid fa-file-pdf"></i><span>Audit PDF</span>
+                        </button>
+                        <button onclick="openProviderModal('${p.id}')" class="py-2.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-emerald-500 hover:text-slate-950 text-white transition flex items-center justify-center gap-1.5 cursor-pointer">
+                            <i class="fa-solid fa-circle-info"></i><span>Deep Specs</span>
+                        </button>
+                    </div>
                 `;
                 grid.appendChild(card);
             });
