@@ -781,7 +781,7 @@ def chat_with_gemini(req: ChatRequest):
         f"- Priority: {ctx.get('priority')}\n"
     )
     
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?key={GEMINI_API_KEY}&alt=sse"
+    candidate_models = ["gemini-flash-latest", "gemini-2.5-flash-lite"]
     
     contents = []
     for msg in req.history:
@@ -798,36 +798,52 @@ def chat_with_gemini(req: ChatRequest):
 
     def generate():
         full_response = ""
-        try:
-            with requests.post(url, json=payload, stream=True) as r:
-                if r.status_code == 401 or r.status_code == 403:
-                    yield "⚠️ **API Key Error**: The Gemini API key configured in `main.py` is invalid or unauthorized. Please update `GEMINI_API_KEY` with a valid key."
-                    return
-                if r.status_code == 429:
-                    yield "⚠️ **Rate Limit Exceeded**: You are sending messages too quickly and have hit the free tier quota limit. Please wait a moment and try again."
-                    return
-                r.raise_for_status()
-                for line in r.iter_lines():
-                    if line:
-                        decoded_line = line.decode('utf-8')
-                        if decoded_line.startswith("data: "):
-                            data_str = decoded_line[6:]
-                            try:
-                                data_json = json.loads(data_str)
-                                if "candidates" in data_json:
-                                    for candidate in data_json["candidates"]:
-                                        if "content" in candidate and "parts" in candidate["content"]:
-                                            for part in candidate["content"]["parts"]:
-                                                text = part.get("text", "")
-                                                if text:
-                                                    full_response += text
-                                                    yield text
-                            except json.JSONDecodeError:
-                                pass
-            if full_response and len(req.history) == 0:
-                CHAT_CACHE[cache_key] = full_response
-        except Exception as e:
-            yield f"Error connecting to AI Provider: {str(e)}"
+        last_error = None
+        for model_name in candidate_models:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:streamGenerateContent?key={GEMINI_API_KEY}&alt=sse"
+            try:
+                with requests.post(url, json=payload, stream=True, timeout=15) as r:
+                    if r.status_code in (401, 403):
+                        yield "⚠️ **API Key Error**: The Gemini API key configured in `main.py` is invalid or unauthorized. Please verify your GEMINI_API_KEY."
+                        return
+                    if r.status_code == 429:
+                        yield "⚠️ **Rate Limit Exceeded**: Free tier request quota reached. Please wait a moment and try again."
+                        return
+                    if r.status_code == 503:
+                        # Server overloaded, try fallback model
+                        last_error = "503"
+                        continue
+                    r.raise_for_status()
+                    for line in r.iter_lines():
+                        if line:
+                            decoded_line = line.decode('utf-8')
+                            if decoded_line.startswith("data: "):
+                                data_str = decoded_line[6:]
+                                try:
+                                    data_json = json.loads(data_str)
+                                    if "candidates" in data_json:
+                                        for candidate in data_json["candidates"]:
+                                            if "content" in candidate and "parts" in candidate["content"]:
+                                                for part in candidate["content"]["parts"]:
+                                                    text = part.get("text", "")
+                                                    if text:
+                                                        full_response += text
+                                                        yield text
+                                except json.JSONDecodeError:
+                                    pass
+                    if full_response:
+                        if len(req.history) == 0:
+                            CHAT_CACHE[cache_key] = full_response
+                        return
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        if not full_response:
+            if last_error == "503":
+                yield "⚠️ **AI Service High Traffic**: Google's AI servers are momentarily experiencing high traffic (503 Service Unavailable). Please try sending your message again in a few seconds."
+            else:
+                yield "⚠️ **AI Connection Issue**: Unable to connect to the AI model right now. Please wait a moment and try again."
             
     return StreamingResponse(generate(), media_type="text/plain")
 
